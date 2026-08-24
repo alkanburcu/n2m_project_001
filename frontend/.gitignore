@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Vue / Vite build
+dist/
+.vite/
+
+# Environment variables
+.env
+.env.*
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
