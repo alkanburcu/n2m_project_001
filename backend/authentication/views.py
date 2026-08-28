@@ -53,7 +53,7 @@ class PasswordResetRequestView(APIView):
 
             if code is not None:
                 send_password_reset_email(user, code)
-            return Response({'message':'Password reset email sent'}, status=status.HTTP_200_OK)
+        return Response({'message':'Password reset email sent'}, status=status.HTTP_200_OK)
     
 class PasswordResetConfirmView(APIView):
     permission_classes = []
