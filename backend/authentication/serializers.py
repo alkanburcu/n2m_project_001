@@ -1,4 +1,5 @@
 from django.core.cache import cache
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.password_validation import validate_password
@@ -36,13 +37,28 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
        if not reset_data:
               raise serializers.ValidationError("Invalid or expired password reset code.")
+
        if reset_data["attempts"] >= OTP_MAX_ATTEMPTS:
            cache.delete(cache_key)  # Clear the cache after exceeding attempts
            raise serializers.ValidationError("Maximum attempts exceeded. Please request a new password reset code.")
+
+       remaining_time = int(reset_data["expires_at"]- timezone.now().timestamp())
+       if remaining_time <= 0:
+        cache.delete(cache_key)
+        raise serializers.ValidationError("Invalid or expired password reset code.")
+
+       if reset_data["attempts"] >= OTP_MAX_ATTEMPTS:
+            cache.delete(cache_key)
+            raise serializers.ValidationError("Maximum attemps exceed.\n\nPLease request a new reset code.")
+
        if not check_password(code, reset_data["code_hash"]):
-           reset_data["attempts"] += 1
-           cache.set(cache_key, reset_data, timeout=600)  # Update attempts in cache
+           reset_data["attempts"] +=1
+           if reset_data["attempts"] >= OTP_MAX_ATTEMPTS:
+               cache.delete(cache_key)
+           else:
+               cache.set(cache_key, reset_data, timeout=remaining_time)
            raise serializers.ValidationError("Invalid password reset code.")
+           
        try:
            validate_password(new_password, user)
        except DjangoValidationError as e:

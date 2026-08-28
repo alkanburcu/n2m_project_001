@@ -172,8 +172,7 @@ class PasswordResetTests(APITestCase):
 
         self.user.refresh_from_db()
 
-        self.assertTrue(
-            self.user.check_password("OldStrongPassword123!"))
+        self.assertTrue(self.user.check_password("OldStrongPassword123!"))
 
     def test_resend_cooldown_does_not_send_second_email(self):
         first_response = self.request_reset_code(code=123456)
