@@ -1,17 +1,18 @@
 from django.contrib.auth import authenticate
 from django.db.migrations import serializer
+from django.contrib.auth import get_user_model
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
-from .services import send_password_reset_email, get_password_reset_code
-
-from django.contrib.auth import get_user_model
 from rest_framework.permissions import AllowAny
 
-User = get_user_model()
+from .serializers import LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
+from .services import send_password_reset_email, get_password_reset_code
+from users.serializers import UserCreateSerializer
 
+User = get_user_model()
 
 
 class LoginView(APIView):
@@ -65,3 +66,17 @@ class PasswordResetConfirmView(APIView):
         serializer.save()
 
         return Response({'message':'Password reset successful'}, status=status.HTTP_200_OK)
+
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []  # Disable authentication for this view
+
+    def post(self, request):
+        serializer = UserCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({'message': 'User registered successfully',
+                             'user': {'id': user.id, 'username': user.username, 'email': user.email},
+                             }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
