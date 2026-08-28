@@ -159,6 +159,10 @@ SIMPLE_JWT = {
 #for password reset email
 PASSWORD_RESET_TIMEOUT = 3600  # 1 hour in seconds
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'smtp-relay.brevo.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@example.com')
 FRONTEND_PASSWORD_RESET_URL = os.getenv('FRONTEND_PASSWORD_RESET_URL',"http://localhost:5173/reset-password")
 

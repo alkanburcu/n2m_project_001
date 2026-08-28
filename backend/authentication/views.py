@@ -4,8 +4,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, User
-from .services import send_password_reset_email
+from .serializers import LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
+from .services import send_password_reset_email, get_password_reset_code
 
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import AllowAny
@@ -38,23 +38,27 @@ class LoginView(APIView):
 
 
 class PasswordResetRequestView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        serializer = PasswordResetRequestSerializer(data=request.data)
-        if serializer.is_valid():
-            email = serializer.validated_data['email']
-            user = User.objects.get(email=email)
-            send_password_reset_email(user)
-            return Response({'message':'Password reset email sent'}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class PasswordResetConfirmView(APIView):
-    permission_classes = (AllowAny,)
+    permission_classes = []
     authentication_classes = []  # Disable authentication for this view
 
     def post(self, request):
-        print("testtt")
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        user = User.objects.filter(email__iexact=email, is_active=True).first()
+
+        if user is not None:
+            code = get_password_reset_code(email)
+
+            if code is not None:
+                send_password_reset_email(user, code)
+            return Response({'message':'Password reset email sent'}, status=status.HTTP_200_OK)
+    
+class PasswordResetConfirmView(APIView):
+    permission_classes = []
+    authentication_classes = []
+
+    def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
