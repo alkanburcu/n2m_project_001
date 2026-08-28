@@ -24,16 +24,12 @@ class UserCreateSerializer(serializers.ModelSerializer):
         if password != password_confirm:
             raise serializers.ValidationError({ "password_confirm": ("Password fields do not match.")})
 
-        candidate_user = User(
-            username=attrs.get("username"),
-            email=attrs.get("email"),
-        )
+        candidate_user = User(username=attrs.get("username"),
+                              email=attrs.get("email"), )
 
         try:
-            validate_password(
-                password=password,
-                user=candidate_user,
-            )
+            validate_password(password=password,
+                              user=candidate_user,)
         except DjangoValidationError as error:
             raise serializers.ValidationError(
                 {"password": list(error.messages)}
@@ -44,6 +40,4 @@ class UserCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop("password_confirm")
 
-        return User.objects.create_user(
-            **validated_data
-        )
+        return User.objects.create_user(**validated_data)
