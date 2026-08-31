@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from .models import Adress, geo, Company
 
 from rest_framework import serializers
 
@@ -41,3 +42,32 @@ class UserCreateSerializer(serializers.ModelSerializer):
         validated_data.pop("password_confirm")
 
         return User.objects.create_user(**validated_data)
+
+
+class GeoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = geo
+        fields = ("lat", "lng")
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    geo = GeoSerializer(read_only=True)
+
+    class Meta:
+        model = Adress
+        fields = ("street","suite","city","zipcode","geo",)
+
+
+class CompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ("name",)
+
+
+class UserSerializer(serializers.ModelSerializer):
+    addresses = AddressSerializer(read_only=True)
+    company = CompanySerializer(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ("id","name","username","email","phone_number","website","addresses","company",)
