@@ -1,15 +1,25 @@
 <script setup>
-import { onMounted } from 'vue'
-
 import UserCard from '../components/UserCard.vue'
 import UserListSidebar from '../components/UserListSidebar.vue'
 import { useUserStore } from '../store/userStore'
+import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
+const router = useRouter()
 
 onMounted(() => {
   userStore.fetchUsers()
 })
+
+const openUser = (userId) => {
+  router.push({
+    name: 'user-todos',
+    params: {
+      id: userId,
+    },
+  })
+}
 </script>
 
 <template>
@@ -32,6 +42,7 @@ onMounted(() => {
           v-for="user in userStore.users"
           :key="user.id"
           :user="user"
+          @select="openUser"
         />
       </section>
     </main>

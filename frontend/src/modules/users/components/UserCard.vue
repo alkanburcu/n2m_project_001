@@ -11,10 +11,16 @@ defineProps({
     required: true,
   },
 })
+defineEmits(['select'])
 </script>
 
 <template>
-  <article class="user-card">
+  <article
+  class="user-card"
+  tabindex="0"
+  role="button"
+  @click="$emit('select', user.id)"
+  @keydown.enter="$emit('select', user.id)">
     <div class="user-card__profile">
       <div class="user-card__avatar">
         {{ (user.name || user.username).charAt(0).toUpperCase() }}
@@ -67,6 +73,8 @@ defineProps({
 
 <style scoped>
 .user-card {
+  min-width: 0;
+  overflow: hidden;
   min-height: 285px;
   padding: 20px;
 
@@ -112,6 +120,8 @@ defineProps({
 }
 
 .user-card__identity h2 {
+  flex: 1;
+  min-width: 0;
   margin: 0 0 3px;
 
   color: var(--color-title);
@@ -120,8 +130,12 @@ defineProps({
   font-weight: 600;
 }
 
+.user-card__identity h2,
 .user-card__identity p,
 .user-card__identity span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   display: block;
   margin: 0;
 
@@ -132,11 +146,16 @@ defineProps({
 }
 
 .user-card__details {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
+.user-card__details > div {
+  flex: 1;
+  min-width: 0
+}
 .user-card__detail {
   display: flex;
   align-items: flex-start;
@@ -155,6 +174,7 @@ defineProps({
 }
 
 .user-card__detail p {
+  overflow-wrap: anywhere;
   margin: 0;
 
   color: var(--color-subtitle);

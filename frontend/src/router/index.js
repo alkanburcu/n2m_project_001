@@ -1,21 +1,23 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
 import authRoutes from '@/modules/auth/routes/authRoutes'
-import UserListPage from '@/modules/users/pages/UserListPage.vue'
+import userRoutes from '@/modules/users/routes/userRoutes'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [ ...authRoutes, {path: '/', name: 'users', component: UserListPage, meta: { requiresAuth: true},}],
+  routes: [...authRoutes, ...userRoutes, ],
 })
 
-router.beforeEach((to)=> { const access_token = localStorage.getItem('access_token')
-   if (to.meta.requiresAuth && !access_token) {
+router.beforeEach((to) => {
+  const accessToken = localStorage.getItem('access_token')
+
+  if (to.meta.requiresAuth && !accessToken) {
     return {name: 'login',}
   }
 
-  if (to.name === 'login' && access_token) {
-    return { name: 'users',}
+  if (to.name === 'login' && accessToken) {
+    return {name: 'users',}
   }
 })
-
 
 export default router
