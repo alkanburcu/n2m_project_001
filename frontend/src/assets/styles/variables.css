@@ -1,0 +1,11 @@
+:root {
+  --color-primary: #4c3899;
+  --color-border: #d8d9dd;
+  --color-title: #26303e;
+  --color-subtitle: #5c6672;
+
+  --color-white: #ffffff;
+  --color-background: #ffffff;
+
+  --font-family: 'Poppins', sans-serif;
+}
