@@ -12,7 +12,8 @@ from rest_framework.test import APITestCase
 
 User = get_user_model()
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend") 
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+                   CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache",}},) 
 
 
 class PasswordResetTests(APITestCase):
