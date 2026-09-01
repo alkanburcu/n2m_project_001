@@ -10,7 +10,7 @@ class Post(BaseModel):
 
     def __str__(self):
         return self.title
-    
+
 class Comment(BaseModel):
     post = models.ForeignKey(
         Post,
@@ -26,4 +26,3 @@ class Comment(BaseModel):
 
     def __str__(self):
         return f"Comment by {self.user.username}"
-
