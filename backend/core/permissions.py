@@ -32,3 +32,12 @@ class IsOwnerOrSuperUserOrReadOnly(BasePermission):
             return True
 
         return obj.user == request.user
+
+class IsAlbumOwnerOrSuperUser(BasePermission):
+    message = "You do not have permission to modify this photo."
+
+    def has_object_permission(self, request, view, obj):
+        if request.user.is_superuser:
+            return True
+
+        return obj.album.user == request.user
