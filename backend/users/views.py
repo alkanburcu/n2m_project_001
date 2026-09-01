@@ -1,4 +1,4 @@
-from rest_framework.permissions import IsAuthenticated
+from core.permissions import IsSuperUser
 from rest_framework.viewsets import ModelViewSet
 
 from .models import User
@@ -11,7 +11,8 @@ class UserViewSet(ModelViewSet):
         "company",
     ).all()
 
-    permission_classes = [IsAuthenticated]
+
+    permission_classes = [IsSuperUser]
 
     def get_serializer_class(self):
         if self.action == "create":
