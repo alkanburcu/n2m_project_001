@@ -48,6 +48,9 @@ INSTALLED_APPS = [
 
     'users',
     'authentication',
+    'posts',
+    'albums',
+    'todos',
 ]
 
 

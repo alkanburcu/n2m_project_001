@@ -1,9 +1,10 @@
 from django.db import models
-from backend.core.core_models import BaseModel
+from django.conf import settings
+from core.core_models import BaseModel
 
 class Post(BaseModel):
-    userId = models.IntegerField()
-    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="posts")
+
     title = models.CharField(max_length=200)
     body = models.TextField()
 
