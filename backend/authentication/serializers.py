@@ -75,3 +75,9 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         cache.delete(self.validated_data["cache_key"])  # Clear the cache after successful password reset
 
         return user
+
+class CurrentUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("id","username","email","is_superuser",)
+        read_only_fields = fields

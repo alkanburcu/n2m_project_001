@@ -268,3 +268,54 @@ class AlbumPhotoPermissionTests(APITestCase):
             len(response.data),
             2,
         )
+
+    def test_user_cannot_move_photo_to_another_users_album(self):
+        user02_album = Album.objects.create(user=self.user02,title="User02 Album",)
+
+        self.client.force_authenticate(user=self.user01)
+
+        response = self.client.patch(
+            reverse(
+                "photo-detail",
+                args=[self.photo.id],
+            ),
+            {
+                "album": str(user02_album.id),
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.photo.refresh_from_db()
+
+        self.assertEqual(self.photo.album_id,self.album.id,)
+
+
+    def test_user_can_move_photo_to_another_own_album(self):
+        second_album = Album.objects.create(
+            user=self.user01,
+            title="User01 Second Album",
+        )
+
+        self.client.force_authenticate(user=self.user01)
+
+        response = self.client.patch(
+            reverse(
+                "photo-detail",
+                args=[self.photo.id],
+            ),
+            {
+                "album": str(second_album.id),
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code,status.HTTP_200_OK,)
+
+        self.photo.refresh_from_db()
+
+        self.assertEqual(self.photo.album_id,second_album.id,)

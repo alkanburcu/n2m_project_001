@@ -29,18 +29,23 @@ class AlbumViewSet(ModelViewSet):
 
 class PhotoViewSet(ModelViewSet):
     serializer_class = PhotoSerializer
-    permission_classes = [
-        IsAuthenticated,
-        IsAlbumOwnerOrSuperUser,
-    ]
+    permission_classes = [IsAuthenticated,IsAlbumOwnerOrSuperUser,]
 
     def get_queryset(self):
         user = self.request.user
 
         if user.is_superuser:
-            queryset = Photo.objects.select_related("album","album__user",).all()
+            queryset = Photo.objects.select_related(
+                "album",
+                "album__user",
+            ).all()
         else:
-            queryset = Photo.objects.select_related("album","album__user",).filter(album__user=user)
+            queryset = Photo.objects.select_related(
+                "album",
+                "album__user",
+            ).filter(
+                album__user=user
+            )
 
         album_id = self.request.query_params.get("album")
 
@@ -49,15 +54,22 @@ class PhotoViewSet(ModelViewSet):
 
         return queryset
 
-    def perform_create(self, serializer):
-        album = serializer.validated_data["album"]
+    def _check_album_ownership(self, serializer):
+        album = serializer.validated_data.get("album")
+
+        if album is None:
+            return
 
         if (
             not self.request.user.is_superuser
-            and album.user != self.request.user
+            and album.user_id != self.request.user.id
         ):
-            raise PermissionDenied(
-                "You cannot add photos to another user's album."
-            )
+            raise PermissionDenied("You cannot assign a photo to another user's album.")
 
+    def perform_create(self, serializer):
+        self._check_album_ownership(serializer)
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self._check_album_ownership(serializer)
         serializer.save()
