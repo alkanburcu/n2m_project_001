@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from .services.user_service import create_application_user
 from .models import Adress, geo, Company
 
 from rest_framework import serializers
@@ -41,7 +42,21 @@ class UserCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop("password_confirm")
 
-        return User.objects.create_user(**validated_data)
+        request = self.context.get("request")
+
+        granted_by = None
+
+        if (
+            request
+            and request.user
+            and request.user.is_authenticated
+        ):
+            granted_by = request.user
+
+        return create_application_user(
+            granted_by=granted_by,
+            **validated_data,
+        )
 
 
 class GeoSerializer(serializers.ModelSerializer):

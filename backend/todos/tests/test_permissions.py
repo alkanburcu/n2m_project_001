@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
+from authorization.services.assignments import assign_default_role
 
 from todos.models import Todo
 
@@ -34,6 +35,9 @@ class TodoPermissionTests(APITestCase):
             title="User01 Todo",
             completed=False,
         )
+
+        assign_default_role(user=self.user01)
+        assign_default_role(user=self.user02)
 
     def test_user_can_create_own_todo(self):
         self.client.force_authenticate(user=self.user01)

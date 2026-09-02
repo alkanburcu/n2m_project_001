@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
+from authorization.services.assignments import assign_default_role
 
 from posts.models import Post
 
@@ -34,6 +35,9 @@ class PostPermissionTests(APITestCase):
             title="User01 Post",
             body="Post body",
         )
+
+        assign_default_role(user=self.user01)
+        assign_default_role(user=self.user02)
 
     def test_authenticated_user_can_read_other_users_posts(self):
         self.client.force_authenticate(user=self.user02)
@@ -81,7 +85,7 @@ class PostPermissionTests(APITestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         self.post.refresh_from_db()
         self.assertEqual(self.post.title, "User01 Post")
@@ -93,7 +97,7 @@ class PostPermissionTests(APITestCase):
             reverse("post-detail", args=[self.post.id])
         )
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(
             Post.objects.filter(id=self.post.id).exists()
         )

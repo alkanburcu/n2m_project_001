@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
+from authorization.services.assignments import assign_default_role
 
 
 User = get_user_model()
@@ -20,6 +21,9 @@ class UserPermissionTests(APITestCase):
             email="user02@test.com",
             password="Test123!",
         )
+
+        assign_default_role(user=self.user01)
+        assign_default_role(user=self.user02)
 
         self.superuser = User.objects.create_superuser(
             username="admin",
@@ -61,7 +65,7 @@ class UserPermissionTests(APITestCase):
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_403_FORBIDDEN,
+            status.HTTP_404_NOT_FOUND,
         )
 
     def test_normal_user_cannot_update_user(self):
@@ -73,14 +77,14 @@ class UserPermissionTests(APITestCase):
                 args=[self.user02.id],
             ),
             {
-                "first_name": "Changed",
+                "name": "Changed",
             },
             format="json",
         )
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_403_FORBIDDEN,
+            status.HTTP_404_NOT_FOUND,
         )
 
         self.user02.refresh_from_db()

@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
+from authorization.services.assignments import assign_default_role
 
 from albums.models import Album, Photo
 
@@ -40,6 +41,9 @@ class AlbumPhotoPermissionTests(APITestCase):
             url="https://example.com/photo.jpg",
             thumbnail_url="https://example.com/thumb.jpg",
         )
+
+        assign_default_role(user=self.user01)
+        assign_default_role(user=self.user02)
 
     def test_user_only_sees_own_albums(self):
         Album.objects.create(

@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
+from authorization.services.assignments import assign_default_role
 
 from posts.models import Comment, Post
 
@@ -41,6 +42,9 @@ class CommentPermissionTests(APITestCase):
             body="User02 comment",
         )
 
+        assign_default_role(user=self.user01)
+        assign_default_role(user=self.user02)
+
     def test_user_can_comment_on_another_users_post(self):
         self.client.force_authenticate(user=self.user01)
 
@@ -65,7 +69,7 @@ class CommentPermissionTests(APITestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         self.comment.refresh_from_db()
         self.assertEqual(self.comment.body, "User02 comment")

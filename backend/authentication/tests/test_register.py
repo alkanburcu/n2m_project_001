@@ -136,3 +136,16 @@ class RegisterTests(APITestCase):
         self.assertNotIn("password_confirm",response.data,)
 
         self.assertNotIn( "password", response.data["user"],)
+
+    def test_registered_user_gets_default_role(self):
+        response = self.client.post(self.url,self.valid_data,format="json",)
+
+        self.assertEqual(response.status_code,status.HTTP_201_CREATED,)
+
+        user = User.objects.get( username=self.valid_data["username"],)
+
+        self.assertTrue(
+            user.role_assignments.filter(role__key="standard-user",is_active=True,).exists()
+        )
+
+        

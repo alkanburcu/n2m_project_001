@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from authorization.services.resolver import get_effective_permissions
 
 from rest_framework import serializers 
 
@@ -77,7 +78,11 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         return user
 
 class CurrentUserSerializer(serializers.ModelSerializer):
+    permissions = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ("id","username","email","is_superuser",)
-        read_only_fields = fields
+        fields = ("id","username","email","is_superuser","permissions",)
+
+    def get_permissions(self, obj):
+        return get_effective_permissions(obj)

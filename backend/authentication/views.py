@@ -1,5 +1,4 @@
 from django.contrib.auth import authenticate
-from django.db.migrations import serializer
 from django.contrib.auth import get_user_model
 
 from rest_framework.views import APIView

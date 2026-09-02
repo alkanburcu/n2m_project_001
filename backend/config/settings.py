@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'posts',
     'albums',
     'todos',
+
+    "authorization",
 ]
 
 
