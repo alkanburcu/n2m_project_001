@@ -6,22 +6,30 @@ import { useAuthStore } from '../store/authStore'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const username = ref ('')
+const username = ref('')
 const password = ref('')
 const errorMessage = ref('')
 const isLoading = ref(false)
 
 const handleLogin = async () => {
-    errorMessage.value = ''
-    isLoading.value = true
+  errorMessage.value = ''
+  isLoading.value = true
 
-    try {
-        await authStore.login({ username: username.value, password: password.value,})
+  try {
+    const user = await authStore.login({
+      username: username.value,
+      password: password.value,
+    })
 
-    await router.push('/')
+    if (user.is_superuser) {
+      await router.push('/users')
+    } else {
+      await router.push(`/users/${user.id}`)
     }
-    catch (error) { errorMessage.value = error.response?.data?.error || 'Login failed.Please check your credentials.' }
-    finally { isLoading.value = false }
+  } catch (error) {
+    errorMessage.value =
+      error.response?.data?.error ||'Login failed. Please check your credentials.'} finally 
+      {isLoading.value = false }
 }
 </script>
 

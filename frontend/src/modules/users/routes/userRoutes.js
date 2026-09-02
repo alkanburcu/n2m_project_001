@@ -7,7 +7,7 @@ import UserListPage from '../pages/UserListPage.vue'
 
 const userRoutes = [
   {
-    path: '/',
+    path: '/users',
     name: 'users',
     component: UserListPage,
     meta: {requiresAuth: true,},
@@ -32,5 +32,6 @@ const userRoutes = [
     ],
   },
 ]
+
 
 export default userRoutes
