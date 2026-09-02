@@ -21,7 +21,7 @@ const handleLogin = async () => {
       password: password.value,
     })
 
-    if (user.is_superuser) {
+    if (authStore.can('users.list')) {
       await router.push('/users')
     } else {
       await router.push(`/users/${user.id}`)

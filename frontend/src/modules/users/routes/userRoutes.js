@@ -10,12 +10,12 @@ const userRoutes = [
     path: '/users',
     name: 'users',
     component: UserListPage,
-    meta: {requiresAuth: true,},
+    meta: {requiresAuth: true, permission: 'users.list',},
   },
   {
     path: '/users/:id',
     component: UserDetailLayout,
-    meta: {requiresAuth: true,},
+    meta: {requiresAuth: true,userScoped: true,},
     children: [
       {
         path: '',

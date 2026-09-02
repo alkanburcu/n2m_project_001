@@ -8,6 +8,7 @@ export const useAuthStore = defineStore ('auth', () => {
   const isAuthenticated = computed(() => Boolean(accessToken.value))
   const user = ref(null)
   const isSuperuser = computed(() => Boolean(user.value?.is_superuser))
+  const can = (permissionKey) => {return Boolean(user.value?.permissions?.[permissionKey])}
 
 
   const login = async (credentials) => {
@@ -24,9 +25,10 @@ export const useAuthStore = defineStore ('auth', () => {
   return user.value
 }
 
-const clearTokens = () => {
+  const clearAuth = () => {
     accessToken.value = null
     refreshToken.value = null
+    user.value = null
 
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
@@ -51,7 +53,7 @@ const fetchMe = async () => {
 }
  
 
-return { accessToken, refreshToken, isAuthenticated, isSuperuser, login, logout, fetchMe }
+return { accessToken, refreshToken, isAuthenticated, isSuperuser, user, can, login, logout, fetchMe }
 })
 
 
