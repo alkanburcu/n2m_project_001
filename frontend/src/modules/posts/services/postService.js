@@ -32,6 +32,10 @@ const deletePost = (id) => {
   return api.delete(`/posts/${id}/`)
 }
 
+const createComment = (data) => {
+  return api.post('/comments/', data)
+}
+
 export default {
   getPostsByUser,
   getPostById,
@@ -39,4 +43,5 @@ export default {
   createPost,
   updatePost,
   deletePost,
+  createComment,
 }
