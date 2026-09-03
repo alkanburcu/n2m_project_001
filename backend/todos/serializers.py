@@ -14,6 +14,8 @@ class TodoSerializer(serializers.ModelSerializer):
     
             read_only_fields = ("id","user","created_at","updated_at",)
 
+            extra_kwargs = {"user": {"required": False,},}
+
     def validate(self, attrs):
         if self.instance is not None:
             requested_user = attrs.get("user")
