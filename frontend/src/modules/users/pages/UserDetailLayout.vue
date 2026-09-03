@@ -1,7 +1,6 @@
 <script setup>
 import { RouterView } from 'vue-router'
 
-import AppHeader from '@/layouts/AppHeader.vue'
 import UserDetailSidebar from '../components/UserDetailSidebar.vue'
 </script>
 
@@ -26,7 +25,7 @@ import UserDetailSidebar from '../components/UserDetailSidebar.vue'
 
 .user-detail-layout__main {
   min-height: 100vh;
-  margin-left: 190px;
+  margin-left: 210px;
 
   display: flex;
   flex-direction: column;
@@ -37,6 +36,6 @@ import UserDetailSidebar from '../components/UserDetailSidebar.vue'
   flex: 1;
 
   box-sizing: border-box;
-  padding: 28px 36px 40px;
+  padding: calc(var(--app-header-height) + 28px) 36px 40px;
 }
 </style>

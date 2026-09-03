@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import authRoutes from '@/modules/auth/routes/authRoutes'
 import userRoutes from '@/modules/users/routes/userRoutes'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -14,7 +15,14 @@ const router = createRouter({
     },
 
     ...authRoutes,
-    ...userRoutes,
+
+    {
+      path: '/',
+      component: AuthenticatedLayout,
+      children: [
+        ...userRoutes,
+      ],
+    },
   ],
 })
 

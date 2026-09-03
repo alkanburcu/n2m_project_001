@@ -1,20 +1,66 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+} from 'vue'
+
+import {
+  IconArrowLeft,
   IconChevronDown,
   IconLogout,
   IconUser,
 } from '@tabler/icons-vue'
 
+import { useRoute, useRouter } from 'vue-router'
+
 import { useAuthStore } from '@/modules/auth/store/authStore'
 
+const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
 const isMenuOpen = ref(false)
 const isLoggingOut = ref(false)
 const menuRef = ref(null)
+
+/* HOME NAVIGATION */
+
+const homeRoute = computed(() => {
+  // User listesini görme yetkisi olan kullanıcıların
+  // ana sayfası Users listesi.
+  if (authStore.can('users.list')) {
+    return {
+      name: 'users',
+    }
+  }
+
+  // Normal kullanıcı için kendi Todos sayfası ana sayfa.
+  return {
+    name: 'user-todos',
+    params: {
+      id: authStore.user?.id,
+    },
+  }
+})
+
+const isHomePage = computed(() => {
+  if (authStore.can('users.list')) {
+    return route.name === 'users'
+  }
+
+  return (
+    route.name === 'user-todos' &&
+    String(route.params.id) === String(authStore.user?.id)
+  )
+})
+
+const goHome = async () => {
+  await router.push(homeRoute.value)
+}
+
+/* ACCOUNT MENU */
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
@@ -23,6 +69,8 @@ const toggleMenu = () => {
 const closeMenu = () => {
   isMenuOpen.value = false
 }
+
+/*LOGOUT */
 
 const handleLogout = async () => {
   isLoggingOut.value = true
@@ -36,6 +84,8 @@ const handleLogout = async () => {
     await router.replace('/login')
   }
 }
+
+/* CLICK OUTSIDE */
 
 const handleClickOutside = (event) => {
   if (
@@ -57,8 +107,24 @@ onBeforeUnmount(() => {
 
 <template>
   <header class="app-header">
-    <div class="app-header__left"></div>
+    <!-- LEFT SIDE -->
+    <div class="app-header__left">
+      <button
+        v-if="!isHomePage"
+        type="button"
+        class="home-button"
+        @click="goHome"
+      >
+        <IconArrowLeft
+          :size="17"
+          :stroke-width="1.9"
+        />
 
+        <span>Go Home</span>
+      </button>
+    </div>
+
+    <!-- RIGHT SIDE -->
     <div
       ref="menuRef"
       class="account"
@@ -79,7 +145,9 @@ onBeforeUnmount(() => {
           :size="13"
           :stroke-width="2"
           class="account__chevron"
-          :class="{ 'account__chevron--open': isMenuOpen }"
+          :class="{
+            'account__chevron--open': isMenuOpen,
+          }"
         />
       </button>
 
@@ -100,7 +168,11 @@ onBeforeUnmount(() => {
             />
 
             <span>
-              {{ isLoggingOut ? 'Signing out...' : 'Sign out' }}
+              {{
+                isLoggingOut
+                  ? 'Signing out...'
+                  : 'Sign out'
+              }}
             </span>
           </button>
         </div>
@@ -110,8 +182,17 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+
+/* HEADER */
+
 .app-header {
-  height: 48px;
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: var(--app-sidebar-width);
+
+  height: var(--app-header-height);
+
   box-sizing: border-box;
 
   display: flex;
@@ -127,11 +208,69 @@ onBeforeUnmount(() => {
       rgba(82, 63, 158, 0.1)
     );
 
-  border-bottom: 1px solid rgba(82, 63, 158, 0.1);
+  border-bottom:
+    1px solid rgba(82, 63, 158, 0.1);
 
-  position: relative;
   z-index: 20;
 }
+
+/* GO HOME*/
+
+.app-header__left {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+}
+
+.home-button {
+  height: 32px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  padding: 0 9px;
+
+  color: var(--color-title);
+
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.home-button:hover {
+  color: var(--color-primary);
+
+  background: rgba(255, 255, 255, 0.72);
+
+  border-color:
+    rgba(82, 63, 158, 0.12);
+}
+
+.home-button:focus-visible {
+  outline: none;
+
+  color: var(--color-primary);
+
+  background: rgba(255, 255, 255, 0.72);
+
+  box-shadow:
+    0 0 0 3px rgba(82, 63, 158, 0.1);
+}
+
+/* ACCOUNT */
 
 .account {
   position: relative;
@@ -152,12 +291,16 @@ onBeforeUnmount(() => {
   color: var(--color-primary);
 
   background: rgba(255, 255, 255, 0.75);
-  border: 1px solid rgba(82, 63, 158, 0.16);
+
+  border:
+    1px solid rgba(82, 63, 158, 0.16);
+
   border-radius: 9px;
 
   cursor: pointer;
 
-  box-shadow: 0 1px 3px rgba(41, 33, 77, 0.04);
+  box-shadow:
+    0 1px 3px rgba(41, 33, 77, 0.04);
 
   transition:
     background-color 0.18s ease,
@@ -168,14 +311,17 @@ onBeforeUnmount(() => {
 .account__trigger:hover,
 .account__trigger[aria-expanded='true'] {
   background: #ffffff;
-  border-color: rgba(82, 63, 158, 0.32);
+
+  border-color:
+    rgba(82, 63, 158, 0.32);
 
   box-shadow:
     0 3px 9px rgba(62, 47, 117, 0.1);
 }
 
 .account__chevron {
-  transition: transform 0.18s ease;
+  transition:
+    transform 0.18s ease;
 }
 
 .account__chevron--open {
@@ -190,10 +336,14 @@ onBeforeUnmount(() => {
   right: 0;
 
   width: 132px;
+
   padding: 6px;
 
   background: #ffffff;
-  border: 1px solid var(--color-border);
+
+  border:
+    1px solid var(--color-border);
+
   border-radius: 10px;
 
   box-shadow:
@@ -228,13 +378,18 @@ onBeforeUnmount(() => {
     background-color 0.18s ease;
 }
 
-
-.account-dropdown__logout:hover {
+.account-dropdown__logout:hover:not(:disabled) {
   color: #b42318;
   background: #fff3f2;
 }
 
-/* ANIMATION */
+.account-dropdown__logout:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+  /*DROPDOWN ANIMATION*/
+
 
 .dropdown-enter-active,
 .dropdown-leave-active {
@@ -247,10 +402,5 @@ onBeforeUnmount(() => {
 .dropdown-leave-to {
   opacity: 0;
   transform: translateY(-4px);
-}
-
-.account-dropdown__logout:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 </style>

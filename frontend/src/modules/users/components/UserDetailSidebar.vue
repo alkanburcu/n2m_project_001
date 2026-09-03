@@ -93,7 +93,7 @@ watch(
   position: fixed;
   inset: 0 auto 0 0;
 
-  width: 190px;
+  width: 210px;
   height: 100vh;
 
   display: flex;

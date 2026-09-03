@@ -52,7 +52,9 @@ const openUser = (userId) => {
 <style scoped>
 .users-page {
   min-height: 100vh;
-  background: var(--color-white);
+  box-sizing: border-box;
+
+  padding-top: calc(var(--app-header-height) + 28px);
 }
 
 .users-page__content {
