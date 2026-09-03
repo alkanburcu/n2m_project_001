@@ -1,6 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
-
+from rest_framework.exceptions import PermissionDenied
 from authorization.permissions import HasAppPermission
+from authorization.services.resolver import has_permission
 
 from .models import Comment, Post
 from .serializers import CommentSerializer, PostSerializer
@@ -19,33 +20,59 @@ class PostViewSet(ModelViewSet):
         "destroy": "posts.delete",
     }
 
+    manage_others_permission = "posts.manage_others"
+
+    def can_manage_others(self):
+        return has_permission(
+            self.request.user,
+            self.manage_others_permission,
+        )
+
     def get_queryset(self):
         queryset = Post.objects.select_related(
-            "user"
+            "user",
         ).all()
 
+        # List/retrieve davranışını şimdilik mevcut
+        # sistemdeki gibi koruyoruz.
         if (
-            not self.request.user.is_superuser
-            and self.action not in {"list", "retrieve"}
+            self.action not in {"list", "retrieve"}
+            and not self.can_manage_others()
         ):
             queryset = queryset.filter(
-                user=self.request.user
+                user=self.request.user,
             )
 
         user_id = self.request.query_params.get(
-            "user"
+            "user",
         )
 
         if user_id:
             queryset = queryset.filter(
-                user_id=user_id
+                user_id=user_id,
             )
 
         return queryset
 
     def perform_create(self, serializer):
+        requesting_user = self.request.user
+
+        target_user = serializer.validated_data.get(
+            "user",
+            requesting_user,
+        )
+
+        if (
+            target_user != requesting_user
+            and not self.can_manage_others()
+        ):
+            raise PermissionDenied(
+                "You do not have permission to create "
+                "posts for another user."
+            )
+
         serializer.save(
-            user=self.request.user
+            user=target_user,
         )
 
 
