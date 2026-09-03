@@ -1,8 +1,6 @@
 from rest_framework import serializers
 from .models import Comment, Post
 
-from .models import Post
-
 
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
@@ -16,8 +14,14 @@ class CommentSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    display_name = serializers.SerializerMethodField()
+
+    def get_display_name(self, obj):
+        return obj.user.name or obj.user.username
+
     class Meta:
         model = Comment
-        fields = ("id","post","user","username","body","created_at","updated_at",)
 
-        read_only_fields = ("id","user","username","created_at", "updated_at",)
+        fields = ("id","post","user","username","display_name","body","created_at","updated_at",)
+
+        read_only_fields = ("id","user","username","display_name", "created_at","updated_at",)
