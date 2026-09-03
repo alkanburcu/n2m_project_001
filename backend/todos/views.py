@@ -22,12 +22,23 @@ class TodoViewSet(ModelViewSet):
     def get_queryset(self):
         user = self.request.user
 
-        if user.is_superuser:
-            return Todo.objects.all()
+        queryset = Todo.objects.all()
 
-        return Todo.objects.filter(
-            user=user,
+        if not user.is_superuser:
+            queryset = queryset.filter(
+                user=user,
+            )
+
+        user_id = self.request.query_params.get(
+            "user"
         )
+
+        if user_id:
+            queryset = queryset.filter(
+                user_id=user_id,
+            )
+
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(

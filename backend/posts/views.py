@@ -25,14 +25,23 @@ class PostViewSet(ModelViewSet):
         ).all()
 
         if (
-            self.request.user.is_superuser
-            or self.action in {"list", "retrieve"}
+            not self.request.user.is_superuser
+            and self.action not in {"list", "retrieve"}
         ):
-            return queryset
+            queryset = queryset.filter(
+                user=self.request.user
+            )
 
-        return queryset.filter(
-            user=self.request.user
+        user_id = self.request.query_params.get(
+            "user"
         )
+
+        if user_id:
+            queryset = queryset.filter(
+                user_id=user_id
+            )
+
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(

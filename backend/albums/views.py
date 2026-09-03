@@ -27,12 +27,21 @@ class AlbumViewSet(ModelViewSet):
             "user"
         ).all()
 
-        if user.is_superuser:
-            return queryset
+        if not user.is_superuser:
+            queryset = queryset.filter(
+                user=user
+            )
 
-        return queryset.filter(
-            user=user
+        user_id = self.request.query_params.get(
+            "user"
         )
+
+        if user_id:
+            queryset = queryset.filter(
+                user_id=user_id
+            )
+
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(
