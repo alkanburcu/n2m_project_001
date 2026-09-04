@@ -2,9 +2,11 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.viewsets import ModelViewSet
 
 from authorization.permissions import HasAppPermission
+from authorization.services.resolver import has_permission
 
 from .models import Album, Photo
 from .serializers import AlbumSerializer, PhotoSerializer
+from django.db.models import Count
 
 
 class AlbumViewSet(ModelViewSet):
@@ -20,32 +22,58 @@ class AlbumViewSet(ModelViewSet):
         "destroy": "albums.delete",
     }
 
+    manage_others_permission = "albums.manage_others"
+
+    def can_manage_others(self):
+        return has_permission(
+            self.request.user,
+            self.manage_others_permission,
+        )
+
     def get_queryset(self):
-        user = self.request.user
-
-        queryset = Album.objects.select_related(
-            "user"
-        ).all()
-
-        if not user.is_superuser:
+        queryset = (
+            Album.objects
+            .select_related("user")
+            .prefetch_related("photos")
+            .annotate(
+                photo_count=Count("photos"),
+            )
+        )
+        if not self.can_manage_others():
             queryset = queryset.filter(
-                user=user
+                user=self.request.user,
             )
 
         user_id = self.request.query_params.get(
-            "user"
+            "user",
         )
 
         if user_id:
             queryset = queryset.filter(
-                user_id=user_id
+                user_id=user_id,
             )
 
         return queryset
 
     def perform_create(self, serializer):
+        requesting_user = self.request.user
+
+        target_user = serializer.validated_data.get(
+            "user",
+            requesting_user,
+        )
+
+        if (
+            target_user != requesting_user
+            and not self.can_manage_others()
+        ):
+            raise PermissionDenied(
+                "You do not have permission to create "
+                "albums for another user."
+            )
+
         serializer.save(
-            user=self.request.user
+            user=target_user,
         )
 
 
@@ -62,50 +90,57 @@ class PhotoViewSet(ModelViewSet):
         "destroy": "photos.delete",
     }
 
-    def get_queryset(self):
-        user = self.request.user
+    manage_others_permission = "photos.manage_others"
 
+    def can_manage_others(self):
+        return has_permission(
+            self.request.user,
+            self.manage_others_permission,
+        )
+
+    def get_queryset(self):
         queryset = Photo.objects.select_related(
             "album",
             "album__user",
         ).all()
 
-        if not user.is_superuser:
+        if not self.can_manage_others():
             queryset = queryset.filter(
-                album__user=user
+                album__user=self.request.user,
             )
 
         album_id = self.request.query_params.get(
-            "album"
+            "album",
         )
 
         if album_id:
             queryset = queryset.filter(
-                album_id=album_id
+                album_id=album_id,
             )
 
         return queryset
 
-    def _check_album_ownership(self, serializer):
+    def _check_album_scope(self, serializer):
         album = serializer.validated_data.get(
-            "album"
+            "album",
         )
 
         if album is None:
             return
 
         if (
-            not self.request.user.is_superuser
-            and album.user_id != self.request.user.id
+            album.user_id != self.request.user.id
+            and not self.can_manage_others()
         ):
             raise PermissionDenied(
-                "You cannot assign a photo to another user's album."
+                "You do not have permission to manage "
+                "photos in another user's album."
             )
 
     def perform_create(self, serializer):
-        self._check_album_ownership(serializer)
+        self._check_album_scope(serializer)
         serializer.save()
 
     def perform_update(self, serializer):
-        self._check_album_ownership(serializer)
+        self._check_album_scope(serializer)
         serializer.save()

@@ -10,11 +10,21 @@ class Album(BaseModel):
         return self.title
 
 class Photo(BaseModel):
-    album = models.ForeignKey(Album,on_delete=models.CASCADE,related_name="photos")
+    album = models.ForeignKey(
+        Album,
+        on_delete=models.CASCADE,
+        related_name="photos",
+    )
 
-    title = models.CharField(max_length=200)
-    url = models.URLField()
-    thumbnail_url = models.URLField()
+    title = models.CharField(
+        max_length=200,
+    )
+
+    image = models.ImageField(
+        upload_to="photos/%Y/%m/",
+        null=True,
+        blank=True,
+    )
 
     def __str__(self):
         return self.title

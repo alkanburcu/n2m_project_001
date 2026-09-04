@@ -1,13 +1,42 @@
+import io
+
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+from PIL import Image
+
 from rest_framework import status
-from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
+from rest_framework.test import APITestCase
+
 from authorization.services.assignments import assign_default_role
 
 from albums.models import Album, Photo
 
 
 User = get_user_model()
+
+
+def create_test_image(name="test.jpg"):
+    image = Image.new(
+        "RGB",
+        (10, 10),
+    )
+
+    buffer = io.BytesIO()
+
+    image.save(
+        buffer,
+        format="JPEG",
+    )
+
+    buffer.seek(0)
+
+    return SimpleUploadedFile(
+        name=name,
+        content=buffer.read(),
+        content_type="image/jpeg",
+    )
 
 
 class AlbumPhotoPermissionTests(APITestCase):
@@ -38,12 +67,14 @@ class AlbumPhotoPermissionTests(APITestCase):
         self.photo = Photo.objects.create(
             album=self.album,
             title="User01 Photo",
-            url="https://example.com/photo.jpg",
-            thumbnail_url="https://example.com/thumb.jpg",
+            image=create_test_image(
+                "user01-photo.jpg",
+            ),
         )
 
         assign_default_role(user=self.user01)
         assign_default_role(user=self.user02)
+
 
     def test_user_only_sees_own_albums(self):
         Album.objects.create(
@@ -96,10 +127,11 @@ class AlbumPhotoPermissionTests(APITestCase):
             {
                 "album": str(self.album.id),
                 "title": "New Photo",
-                "url": "https://example.com/new-photo.jpg",
-                "thumbnail_url": "https://example.com/new-thumb.jpg",
+                "image": create_test_image(
+                    "new-photo.jpg",
+                ),
             },
-            format="json",
+            format="multipart",
         )
 
         self.assertEqual(
@@ -120,10 +152,11 @@ class AlbumPhotoPermissionTests(APITestCase):
             {
                 "album": str(self.album.id),
                 "title": "Unauthorized",
-                "url": "https://example.com/hack.jpg",
-                "thumbnail_url": "https://example.com/hack-thumb.jpg",
+                "image": create_test_image(
+                    "unauthorized.jpg",
+                ),
             },
-            format="json",
+            format="multipart",
         )
 
         self.assertEqual(
@@ -323,3 +356,29 @@ class AlbumPhotoPermissionTests(APITestCase):
         self.photo.refresh_from_db()
 
         self.assertEqual(self.photo.album_id,second_album.id,)
+
+    def test_superuser_can_create_album_for_another_user(self):
+        self.client.force_authenticate(
+            user=self.superuser,
+        )
+
+        response = self.client.post(
+            reverse("album-list"),
+            {
+                "user": str(self.user01.id),
+                "title": "Created by admin",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            str(response.data["user"]),
+            str(self.user01.id),
+        )
+
+    
