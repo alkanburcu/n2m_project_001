@@ -39,32 +39,74 @@ class LoginView(APIView):
 
 class PasswordResetRequestView(APIView):
     permission_classes = []
-    authentication_classes = []  # Disable authentication for this view
+    authentication_classes = []
 
     def post(self, request):
-        serializer = PasswordResetRequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data['email']
-        user = User.objects.filter(email__iexact=email, is_active=True).first()
+        serializer = PasswordResetRequestSerializer(
+            data=request.data,
+        )
 
-        if user is not None:
-            code = get_password_reset_code(email)
+        serializer.is_valid(
+            raise_exception=True,
+        )
 
-            if code is not None:
-                send_password_reset_email(user, code)
-        return Response({'message':'Password reset email sent'}, status=status.HTTP_200_OK)
-    
+        user = serializer.validated_data[
+            "user"
+        ]
+
+        if user is None:
+            return Response(
+                {
+                    "error": (
+                        "The username or email "
+                        "is incorrect."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        code = get_password_reset_code(
+            user,
+        )
+
+        if code is not None:
+            send_password_reset_email(
+                user,
+                code,
+            )
+
+        return Response(
+            {
+                "message": (
+                    "A password reset code "
+                    "has been sent."
+                )
+            },
+            status=status.HTTP_200_OK,
+        )
 class PasswordResetConfirmView(APIView):
     permission_classes = []
     authentication_classes = []
 
     def post(self, request):
-        serializer = PasswordResetConfirmSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = PasswordResetConfirmSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
 
         serializer.save()
 
-        return Response({'message':'Password reset successful'}, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "message": (
+                    "Password reset successful"
+                )
+            },
+            status=status.HTTP_200_OK,
+        )
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]

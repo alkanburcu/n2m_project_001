@@ -97,6 +97,14 @@ const handleLogin = async () => {
             </div>
           </div>
 
+          <div class="forgot-password">
+            <RouterLink
+              :to="{ name: 'forgot-password' }"
+            >
+              Forgot password?
+            </RouterLink>
+          </div>
+
           <p
             v-if="errorMessage"
             class="error-message"
@@ -386,6 +394,26 @@ const handleLogin = async () => {
   border-radius: 50%;
 
   animation: spin 0.7s linear infinite;
+}
+
+.forgot-password {
+  margin-top: -12px;
+
+  display: flex;
+  justify-content: flex-end;
+}
+
+.forgot-password a {
+  color: var(--brand-purple);
+
+  font-size: 12px;
+  font-weight: 600;
+
+  text-decoration: none;
+}
+
+.forgot-password a:hover {
+  text-decoration: underline;
 }
 
 @keyframes spin {
