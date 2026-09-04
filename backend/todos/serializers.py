@@ -1,20 +1,32 @@
 from rest_framework import serializers
 
 from .models import Todo
-from rest_framework import serializers
-
-from .models import Todo
 
 
 class TodoSerializer(serializers.ModelSerializer):
     class Meta:
-            model = Todo
-    
-            fields = ("id","user","title","completed","created_at","updated_at",)
-    
-            read_only_fields = ("id","user","created_at","updated_at",)
+        model = Todo
 
-            extra_kwargs = {"user": {"required": False,},}
+        fields = (
+            "id",
+            "user",
+            "title",
+            "completed",
+            "created_at",
+            "updated_at",
+        )
+
+        read_only_fields = (
+            "id",
+            "created_at",
+            "updated_at",
+        )
+
+        extra_kwargs = {
+            "user": {
+                "required": False,
+            },
+        }
 
     def validate(self, attrs):
         if self.instance is not None:

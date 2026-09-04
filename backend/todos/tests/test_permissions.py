@@ -119,3 +119,27 @@ class TodoPermissionTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
+
+    def test_superuser_can_create_todo_for_another_user(self):
+        self.client.force_authenticate(
+            user=self.superuser,
+        )
+
+        response = self.client.post(
+            reverse("todo-list"),
+            {
+                "user": str(self.user01.id),
+                "title": "Created by admin",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            str(response.data["user"]),
+            str(self.user01.id),
+        )
