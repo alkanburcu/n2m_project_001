@@ -76,28 +76,44 @@ class AlbumPhotoPermissionTests(APITestCase):
         assign_default_role(user=self.user02)
 
 
-    def test_user_only_sees_own_albums(self):
-        Album.objects.create(
+    def test_user_can_view_other_users_albums(self):
+        other_album = Album.objects.create(
             user=self.user02,
             title="User02 Album",
         )
 
-        self.client.force_authenticate(user=self.user01)
+        self.client.force_authenticate(
+            user=self.user01,
+        )
 
-        response = self.client.get(reverse("album-list"))
+        response = self.client.get(
+            reverse("album-list")
+        )
 
         self.assertEqual(
             response.status_code,
             status.HTTP_200_OK,
         )
 
-        self.assertEqual(len(response.data), 1)
-
         self.assertEqual(
-            str(response.data[0]["id"]),
-            str(self.album.id),
+            len(response.data),
+            2,
         )
 
+        album_ids = {
+            str(album["id"])
+            for album in response.data
+        }
+
+        self.assertIn(
+            str(self.album.id),
+            album_ids,
+        )
+
+        self.assertIn(
+            str(other_album.id),
+            album_ids,
+        )
     def test_user_can_create_own_album(self):
         self.client.force_authenticate(user=self.user01)
 
@@ -380,5 +396,36 @@ class AlbumPhotoPermissionTests(APITestCase):
             str(response.data["user"]),
             str(self.user01.id),
         )
+    def test_user_cannot_update_other_users_album(self):
+        other_album = Album.objects.create(
+            user=self.user02,
+            title="User02 Album",
+        )
 
-    
+        self.client.force_authenticate(
+            user=self.user01,
+        )
+
+        response = self.client.patch(
+            reverse(
+                "album-detail",
+                args=[other_album.id],
+            ),
+            {
+                "title": "Changed Title",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+
+        other_album.refresh_from_db()
+
+        self.assertEqual(
+            other_album.title,
+            "User02 Album",
+        )
+        

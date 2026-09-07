@@ -39,7 +39,11 @@ class AlbumViewSet(ModelViewSet):
                 photo_count=Count("photos"),
             )
         )
-        if not self.can_manage_others():
+
+        if (
+            self.action not in {"list", "retrieve"}
+            and not self.can_manage_others()
+        ):
             queryset = queryset.filter(
                 user=self.request.user,
             )
@@ -104,7 +108,10 @@ class PhotoViewSet(ModelViewSet):
             "album__user",
         ).all()
 
-        if not self.can_manage_others():
+        if (
+            self.action not in {"list", "retrieve"}
+            and not self.can_manage_others()
+        ):
             queryset = queryset.filter(
                 album__user=self.request.user,
             )

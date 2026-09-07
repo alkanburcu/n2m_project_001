@@ -53,8 +53,10 @@ class UserPermissionTests(APITestCase):
             status.HTTP_403_FORBIDDEN,
         )
 
-    def test_normal_user_cannot_retrieve_user(self):
-        self.client.force_authenticate(user=self.user01)
+    def test_normal_user_can_retrieve_user(self):
+        self.client.force_authenticate(
+            user=self.user01,
+        )
 
         response = self.client.get(
             reverse(
@@ -65,7 +67,12 @@ class UserPermissionTests(APITestCase):
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_404_NOT_FOUND,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            str(response.data["id"]),
+            str(self.user02.id),
         )
 
     def test_normal_user_cannot_update_user(self):
