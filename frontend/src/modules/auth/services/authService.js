@@ -30,31 +30,30 @@ const logout = (refresh) => {
 }
 
 const requestPasswordReset = ({
-  username,
   email,
 }) => {
   return api.post(
     '/auth/password-reset-request/',
     {
-      username,
       email,
     },
   )
 }
 
 const confirmPasswordReset = ({
-  username,
-  email,
-  code,
+  uid,
+  token,
   newPassword,
+  newPasswordConfirm,
 }) => {
   return api.post(
     '/auth/password-reset-confirm/',
     {
-      username,
-      email,
-      code,
+      uid,
+      token,
       new_password: newPassword,
+      new_password_confirm:
+        newPasswordConfirm,
     },
   )
 }

@@ -1,5 +1,6 @@
-import LoginPage from '../pages/LoginPage.vue'
 import ForgotPasswordPage from '../pages/ForgotPasswordPage.vue'
+import LoginPage from '../pages/LoginPage.vue'
+import ResetPasswordPage from '../pages/ResetPasswordPage.vue'
 
 const authRoutes = [
   {
@@ -11,6 +12,11 @@ const authRoutes = [
     path: '/forgot-password',
     name: 'forgot-password',
     component: ForgotPasswordPage,
+  },
+  {
+    path: '/reset-password/:uid/:token',
+    name: 'reset-password',
+    component: ResetPasswordPage,
   },
 ]
 

@@ -1,21 +1,25 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import {
   IconArrowLeft,
-  IconMail,
+  IconEye,
+  IconEyeOff,
 } from '@tabler/icons-vue'
 
 import authService from '../services/authService'
 
+const route = useRoute()
 const router = useRouter()
 
-const email = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
+
+const showNewPassword = ref(false)
+const showConfirmPassword = ref(false)
 
 const errorMessage = ref('')
-const successMessage = ref('')
-
 const isLoading = ref(false)
 
 const getApiError = (error, fallback) => {
@@ -25,12 +29,15 @@ const getApiError = (error, fallback) => {
     return fallback
   }
 
-  if (typeof data.error === 'string') {
-    return data.error
-  }
-
   if (typeof data.detail === 'string') {
     return data.detail
+  }
+
+  if (
+    Array.isArray(data.non_field_errors)
+    && data.non_field_errors.length > 0
+  ) {
+    return data.non_field_errors[0]
   }
 
   const firstFieldError =
@@ -44,40 +51,60 @@ const getApiError = (error, fallback) => {
   return firstFieldError || fallback
 }
 
-const requestPasswordReset = async () => {
-  const normalizedEmail =
-    email.value.trim()
+const resetPassword = async () => {
+  errorMessage.value = ''
 
   if (
-    !normalizedEmail
-    || isLoading.value
+    !newPassword.value
+    || !confirmPassword.value
   ) {
+    errorMessage.value =
+      'Please enter and confirm your new password.'
+
+    return
+  }
+
+  if (
+    newPassword.value
+    !== confirmPassword.value
+  ) {
+    errorMessage.value =
+      'Passwords do not match.'
+
+    return
+  }
+
+  if (isLoading.value) {
     return
   }
 
   isLoading.value = true
-  errorMessage.value = ''
-  successMessage.value = ''
 
   try {
-    await authService.requestPasswordReset({
-      email: normalizedEmail,
+    await authService.confirmPasswordReset({
+      uid: route.params.uid,
+      token: route.params.token,
+      newPassword: newPassword.value,
+      newPasswordConfirm:
+        confirmPassword.value,
     })
 
-    email.value = normalizedEmail
-
-    successMessage.value =
-      'If an account exists for this email, a password reset link has been sent.'
+    await router.replace({
+      name: 'login',
+      query: {
+        passwordReset: 'success',
+      },
+    })
   } catch (error) {
     console.error(
-      'Password reset request failed:',
+      'Password reset confirmation failed:',
       error,
     )
 
     errorMessage.value =
       getApiError(
         error,
-        'Password reset request could not be completed.',
+        'Password could not be reset. The reset link may be invalid or expired.',
       )
   } finally {
     isLoading.value = false
@@ -100,58 +127,115 @@ const requestPasswordReset = async () => {
         </div>
 
         <div class="reset-heading">
-          <h1>Forgot password?</h1>
+          <h1>Reset password</h1>
 
           <p>
-            Enter your email address and
-            we'll send you a link to reset
-            your password.
+            Choose a new password for
+            your account.
           </p>
         </div>
 
         <form
           class="reset-form"
-          @submit.prevent="requestPasswordReset"
+          @submit.prevent="resetPassword"
         >
           <div class="form-group">
-            <label for="reset-email">
-              Email
+            <label for="new-password">
+              New password
             </label>
 
-            <div class="input-with-icon">
-              <IconMail
-                :size="18"
-                :stroke-width="1.7"
-              />
-
+            <div class="password-input">
               <input
-                id="reset-email"
-                v-model="email"
-                type="email"
-                autocomplete="email"
-                placeholder="Enter your email"
+                id="new-password"
+                v-model="newPassword"
+                :type="
+                  showNewPassword
+                    ? 'text'
+                    : 'password'
+                "
+                autocomplete="new-password"
+                placeholder="Enter new password"
                 required
               />
+
+              <button
+                type="button"
+                class="password-toggle"
+                :title="
+                  showNewPassword
+                    ? 'Hide password'
+                    : 'Show password'
+                "
+                @click="
+                  showNewPassword =
+                    !showNewPassword
+                "
+              >
+                <IconEyeOff
+                  v-if="showNewPassword"
+                  :size="20"
+                  :stroke-width="1.8"
+                />
+
+                <IconEye
+                  v-else
+                  :size="20"
+                  :stroke-width="1.8"
+                />
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="confirm-password">
+              Confirm password
+            </label>
+
+            <div class="password-input">
+              <input
+                id="confirm-password"
+                v-model="confirmPassword"
+                :type="
+                  showConfirmPassword
+                    ? 'text'
+                    : 'password'
+                "
+                autocomplete="new-password"
+                placeholder="Enter password again"
+                required
+              />
+
+              <button
+                type="button"
+                class="password-toggle"
+                :title="
+                  showConfirmPassword
+                    ? 'Hide password'
+                    : 'Show password'
+                "
+                @click="
+                  showConfirmPassword =
+                    !showConfirmPassword
+                "
+              >
+                <IconEyeOff
+                  v-if="showConfirmPassword"
+                  :size="20"
+                  :stroke-width="1.8"
+                />
+
+                <IconEye
+                  v-else
+                  :size="20"
+                  :stroke-width="1.8"
+                />
+              </button>
             </div>
           </div>
 
           <p
-            v-if="successMessage"
-            class="
-              message
-              message--success
-            "
-            role="status"
-          >
-            {{ successMessage }}
-          </p>
-
-          <p
             v-if="errorMessage"
-            class="
-              message
-              message--error
-            "
+            class="message message--error"
             role="alert"
           >
             {{ errorMessage }}
@@ -162,13 +246,14 @@ const requestPasswordReset = async () => {
             class="primary-button"
             :disabled="
               isLoading
-              || !email.trim()
+              || !newPassword
+              || !confirmPassword
             "
           >
             {{
               isLoading
-                ? 'Sending...'
-                : 'Send reset link'
+                ? 'Resetting...'
+                : 'Reset password'
             }}
           </button>
         </form>
@@ -357,25 +442,43 @@ const requestPasswordReset = async () => {
   color: #a5abb5;
 }
 
-.input-with-icon {
+.password-input {
   position: relative;
 }
 
-.input-with-icon svg {
+.password-input input {
+  padding-right: 52px;
+}
+
+.password-toggle {
   position: absolute;
 
   top: 50%;
-  left: 14px;
+  right: 14px;
 
-  color: #8a92a0;
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  color: #737b89;
+
+  background: transparent;
+
+  border: 0;
+  border-radius: 6px;
+
+  cursor: pointer;
 
   transform: translateY(-50%);
-
-  pointer-events: none;
 }
 
-.input-with-icon input {
-  padding-left: 42px;
+.password-toggle:hover {
+  color: var(--brand-purple);
 }
 
 .message {
@@ -394,14 +497,6 @@ const requestPasswordReset = async () => {
   background: #fff3f2;
 
   border: 1px solid #ffd5d2;
-}
-
-.message--success {
-  color: #18794e;
-
-  background: #f0faf5;
-
-  border: 1px solid #c7ead8;
 }
 
 .primary-button {
