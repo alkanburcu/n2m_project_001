@@ -35,11 +35,15 @@ const deletePost = (id) => {
 const createComment = (data) => {
   return api.post('/comments/', data)
 }
+const getAllPosts = () => {
+  return api.get('/posts/')
+}
 
 export default {
   getPostsByUser,
   getPostById,
   getCommentsByPost,
+  getAllPosts,
   createPost,
   updatePost,
   deletePost,

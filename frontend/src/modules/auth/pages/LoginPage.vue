@@ -19,16 +19,12 @@ const handleLogin = async () => {
   isLoading.value = true
 
   try {
-    const user = await authStore.login({
+    await authStore.login({
       username: username.value,
       password: password.value,
     })
 
-    if (authStore.can('users.list')) {
-      await router.push('/users')
-    } else {
-      await router.push(`/users/${user.id}`)
-    }
+   await router.push({name: 'feed',})
   } catch (error) {
     errorMessage.value =
       error.response?.data?.error ||

@@ -11,6 +11,7 @@ import {
   IconChevronDown,
   IconLogout,
   IconUser,
+  IconUsers,
 } from '@tabler/icons-vue'
 
 import { useRoute, useRouter } from 'vue-router'
@@ -27,37 +28,39 @@ const menuRef = ref(null)
 
 /* HOME NAVIGATION */
 
-const homeRoute = computed(() => {
-  // User listesini görme yetkisi olan kullanıcıların
-  // ana sayfası Users listesi.
-  if (authStore.can('users.list')) {
-    return {
-      name: 'users',
-    }
-  }
-
-  // Normal kullanıcı için kendi Todos sayfası ana sayfa.
-  return {
-    name: 'user-todos',
-    params: {
-      id: authStore.user?.id,
-    },
-  }
-})
-
 const isHomePage = computed(() => {
-  if (authStore.can('users.list')) {
-    return route.name === 'users'
-  }
-
-  return (
-    route.name === 'user-todos' &&
-    String(route.params.id) === String(authStore.user?.id)
-  )
+  return route.name === 'feed'
 })
 
 const goHome = async () => {
-  await router.push(homeRoute.value)
+  await router.push({
+    name: 'feed',
+  })
+}
+
+/* PROFILE NAVIGATION */
+
+const goMyProfile = async () => {
+  closeMenu()
+
+  if (!authStore.user?.id) {
+    return
+  }
+
+  await router.push({
+    name: 'user-posts',
+    params: {
+      id: authStore.user.id,
+    },
+  })
+}
+
+const goUsers = async () => {
+  closeMenu()
+
+  await router.push({
+    name: 'users',
+  })
 }
 
 /* ACCOUNT MENU */
@@ -120,7 +123,7 @@ onBeforeUnmount(() => {
           :stroke-width="1.9"
         />
 
-        <span>Go Home</span>
+        <span>Back to Feed</span>
       </button>
     </div>
 
@@ -156,6 +159,35 @@ onBeforeUnmount(() => {
           v-if="isMenuOpen"
           class="account-dropdown"
         >
+          <button
+            type="button"
+            class="account-dropdown__item"
+            @click="goMyProfile"
+          >
+            <IconUser
+              :size="18"
+              :stroke-width="1.8"
+            />
+
+            <span>My Profile</span>
+          </button>
+
+          <button
+            v-if="authStore.can('users.list')"
+            type="button"
+            class="account-dropdown__item"
+            @click="goUsers"
+          >
+            <IconUsers
+              :size="18"
+              :stroke-width="1.8"
+            />
+
+            <span>Users</span>
+          </button>
+
+          <div class="account-dropdown__separator" />
+
           <button
             type="button"
             class="account-dropdown__logout"
@@ -351,13 +383,34 @@ onBeforeUnmount(() => {
     0 2px 5px rgba(31, 36, 49, 0.04);
 }
 
+.account-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+
+  width: 160px;
+
+  padding: 6px;
+
+  background: #ffffff;
+
+  border:
+    1px solid var(--color-border);
+
+  border-radius: 10px;
+
+  box-shadow:
+    0 12px 26px rgba(31, 36, 49, 0.1),
+    0 2px 5px rgba(31, 36, 49, 0.04);
+}
+
+.account-dropdown__item,
 .account-dropdown__logout {
   width: 100%;
 
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 7px;
+  gap: 8px;
 
   padding: 8px 10px;
 
@@ -366,6 +419,8 @@ onBeforeUnmount(() => {
   font: inherit;
   font-size: 12.5px;
   font-weight: 500;
+
+  text-align: left;
 
   background: transparent;
   border: 0;
@@ -376,6 +431,21 @@ onBeforeUnmount(() => {
   transition:
     color 0.18s ease,
     background-color 0.18s ease;
+}
+
+.account-dropdown__item:hover {
+  color: var(--color-primary);
+
+  background:
+    rgba(82, 63, 158, 0.06);
+}
+
+.account-dropdown__separator {
+  height: 1px;
+
+  margin: 5px 4px;
+
+  background: var(--color-border);
 }
 
 .account-dropdown__logout:hover:not(:disabled) {

@@ -1,5 +1,6 @@
 <script setup>
 import {
+  computed,
   nextTick,
   ref,
   watch,
@@ -19,20 +20,30 @@ import {
 } from '@tabler/icons-vue'
 
 import { useAuthStore } from '@/modules/auth/store/authStore'
+
 import albumService from '../services/albumService'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
+const canManageProfileAlbums = computed(() => {
+  const isOwnProfile =
+    String(route.params.id)
+    === String(authStore.user?.id)
+
+  return (
+    isOwnProfile
+    || authStore.can(
+      'albums.manage_others',
+    )
+  )
+})
+
 const albums = ref([])
 
 const isLoading = ref(false)
 const errorMessage = ref('')
-
-/* -------------------------
-   CREATE
-------------------------- */
 
 const isCreateOpen = ref(false)
 const isCreating = ref(false)
@@ -40,24 +51,17 @@ const isCreating = ref(false)
 const newAlbumTitle = ref('')
 const newAlbumInput = ref(null)
 
-/* -------------------------
-   EDIT / DELETE
-------------------------- */
-
 const editingAlbumId = ref(null)
 const editAlbumTitle = ref('')
 
 const updatingAlbumIds = ref([])
 const deletingAlbumIds = ref([])
 
-/* -------------------------
-   FETCH
-------------------------- */
-
 let albumRequestId = 0
 
 const fetchAlbums = async (userId) => {
-  const requestId = ++albumRequestId
+  const requestId =
+    ++albumRequestId
 
   isLoading.value = true
   errorMessage.value = ''
@@ -68,13 +72,19 @@ const fetchAlbums = async (userId) => {
         userId,
       )
 
-    if (requestId !== albumRequestId) {
+    if (
+      requestId
+      !== albumRequestId
+    ) {
       return
     }
 
     albums.value = response.data
   } catch (error) {
-    if (requestId !== albumRequestId) {
+    if (
+      requestId
+      !== albumRequestId
+    ) {
       return
     }
 
@@ -86,17 +96,25 @@ const fetchAlbums = async (userId) => {
     errorMessage.value =
       'Albums could not be loaded.'
   } finally {
-    if (requestId === albumRequestId) {
+    if (
+      requestId
+      === albumRequestId
+    ) {
       isLoading.value = false
     }
   }
 }
 
-/* -------------------------
-   CREATE
-------------------------- */
-
 const openCreateAlbum = async () => {
+  if (
+    !authStore.can(
+      'albums.create',
+    )
+    || !canManageProfileAlbums.value
+  ) {
+    return
+  }
+
   isCreateOpen.value = true
 
   await nextTick()
@@ -116,7 +134,10 @@ const createAlbum = async () => {
   if (
     !title
     || isCreating.value
-    || !authStore.can('albums.create')
+    || !authStore.can(
+      'albums.create',
+    )
+    || !canManageProfileAlbums.value
   ) {
     return
   }
@@ -131,7 +152,9 @@ const createAlbum = async () => {
         title,
       })
 
-    albums.value.push(response.data)
+    albums.value.push(
+      response.data,
+    )
 
     closeCreateAlbum()
   } catch (error) {
@@ -147,13 +170,21 @@ const createAlbum = async () => {
   }
 }
 
-/* -------------------------
-   EDIT
-------------------------- */
-
 const startEditing = (album) => {
-  editingAlbumId.value = album.id
-  editAlbumTitle.value = album.title
+  if (
+    !authStore.can(
+      'albums.update',
+    )
+    || !canManageProfileAlbums.value
+  ) {
+    return
+  }
+
+  editingAlbumId.value =
+    album.id
+
+  editAlbumTitle.value =
+    album.title
 }
 
 const cancelEditing = () => {
@@ -170,13 +201,17 @@ const updateAlbum = async (album) => {
     || updatingAlbumIds.value.includes(
       album.id,
     )
-    || !authStore.can('albums.update')
+    || !authStore.can(
+      'albums.update',
+    )
+    || !canManageProfileAlbums.value
   ) {
     return
   }
 
   if (title === album.title) {
     cancelEditing()
+
     return
   }
 
@@ -197,7 +232,8 @@ const updateAlbum = async (album) => {
 
     const index =
       albums.value.findIndex(
-        (item) => item.id === album.id,
+        (item) =>
+          item.id === album.id,
       )
 
     if (index !== -1) {
@@ -217,21 +253,23 @@ const updateAlbum = async (album) => {
   } finally {
     updatingAlbumIds.value =
       updatingAlbumIds.value.filter(
-        (id) => id !== album.id,
+        (id) =>
+          id !== album.id,
       )
   }
 }
 
-/* -------------------------
-   DELETE
-------------------------- */
-
-const deleteAlbum = async (albumId) => {
+const deleteAlbum = async (
+  albumId,
+) => {
   if (
     deletingAlbumIds.value.includes(
       albumId,
     )
-    || !authStore.can('albums.delete')
+    || !authStore.can(
+      'albums.delete',
+    )
+    || !canManageProfileAlbums.value
   ) {
     return
   }
@@ -254,7 +292,8 @@ const deleteAlbum = async (albumId) => {
       )
 
     if (
-      editingAlbumId.value === albumId
+      editingAlbumId.value
+      === albumId
     ) {
       cancelEditing()
     }
@@ -269,14 +308,11 @@ const deleteAlbum = async (albumId) => {
   } finally {
     deletingAlbumIds.value =
       deletingAlbumIds.value.filter(
-        (id) => id !== albumId,
+        (id) =>
+          id !== albumId,
       )
   }
 }
-
-/* -------------------------
-   NAVIGATION
-------------------------- */
 
 const openAlbum = (album) => {
   router.push({
@@ -288,10 +324,6 @@ const openAlbum = (album) => {
     },
   })
 }
-
-/* -------------------------
-   HELPERS
-------------------------- */
 
 const isUpdating = (albumId) => {
   return updatingAlbumIds.value.includes(
@@ -329,10 +361,6 @@ const getPreviewLayoutClass = (
   return `album-preview--${count}`
 }
 
-/* -------------------------
-   ROUTE
-------------------------- */
-
 watch(
   () => route.params.id,
   (userId) => {
@@ -355,14 +383,15 @@ watch(
 
 <template>
   <section class="albums-page">
-    <!-- HEADER -->
-
     <div class="albums-header">
       <h1>Albums</h1>
 
       <button
         v-if="
-          authStore.can('albums.create')
+          authStore.can(
+            'albums.create',
+          )
+          && canManageProfileAlbums
           && !isCreateOpen
         "
         type="button"
@@ -378,8 +407,6 @@ watch(
       </button>
     </div>
 
-    <!-- ERROR -->
-
     <p
       v-if="errorMessage"
       class="
@@ -389,8 +416,6 @@ watch(
     >
       {{ errorMessage }}
     </p>
-
-    <!-- CREATE -->
 
     <form
       v-if="isCreateOpen"
@@ -438,8 +463,6 @@ watch(
       </button>
     </form>
 
-    <!-- STATES -->
-
     <p
       v-if="isLoading"
       class="page-state"
@@ -457,8 +480,6 @@ watch(
       No albums found.
     </p>
 
-    <!-- GRID -->
-
     <div
       v-else
       class="album-grid"
@@ -468,11 +489,10 @@ watch(
         :key="album.id"
         class="album-card"
       >
-        <!-- EDIT MODE -->
-
         <form
           v-if="
-            editingAlbumId === album.id
+            editingAlbumId
+            === album.id
           "
           class="album-edit"
           @submit.prevent="
@@ -521,16 +541,12 @@ watch(
           </div>
         </form>
 
-        <!-- NORMAL MODE -->
-
         <template v-else>
           <button
             type="button"
             class="album-card__open"
             @click="openAlbum(album)"
           >
-            <!-- PREVIEW -->
-
             <div
               class="album-preview"
               :class="
@@ -580,8 +596,6 @@ watch(
               </div>
             </div>
 
-            <!-- META -->
-
             <div
               class="album-card__meta"
             >
@@ -599,7 +613,8 @@ watch(
                 "
               >
                 {{
-                  album.photo_count ?? 0
+                  album.photo_count
+                  ?? 0
                 }}
 
                 {{
@@ -614,8 +629,6 @@ watch(
             </div>
           </button>
 
-          <!-- ACTIONS -->
-
           <div
             class="album-card__actions"
           >
@@ -624,6 +637,7 @@ watch(
                 authStore.can(
                   'albums.update',
                 )
+                && canManageProfileAlbums
               "
               type="button"
               class="icon-button"
@@ -643,6 +657,7 @@ watch(
                 authStore.can(
                   'albums.delete',
                 )
+                && canManageProfileAlbums
               "
               type="button"
               class="
@@ -652,7 +667,9 @@ watch(
               :disabled="
                 isDeleting(album.id)
               "
-              aria-label="Delete album"
+              aria-label="
+                Delete album
+              "
               @click.stop="
                 deleteAlbum(album.id)
               "
@@ -674,8 +691,6 @@ watch(
   width: 100%;
 }
 
-/* HEADER */
-
 .albums-header {
   display: flex;
   align-items: center;
@@ -695,8 +710,6 @@ watch(
   font-weight: 700;
 }
 
-/* STATES */
-
 .page-state {
   margin: 16px 0;
 
@@ -708,8 +721,6 @@ watch(
 .page-state--error {
   color: #b42318;
 }
-
-/* CREATE */
 
 .new-album-button {
   display: inline-flex;
@@ -793,8 +804,6 @@ watch(
     rgba(82, 63, 158, 0.45);
 }
 
-/* GRID */
-
 .album-grid {
   display: grid;
 
@@ -806,8 +815,6 @@ watch(
 
   gap: 18px;
 }
-
-/* CARD */
 
 .album-card {
   position: relative;
@@ -856,8 +863,6 @@ watch(
   cursor: pointer;
 }
 
-/* PREVIEW */
-
 .album-preview {
   width: 100%;
   height: 240px;
@@ -883,8 +888,6 @@ watch(
   object-fit: cover;
 }
 
-/* 0 PHOTOS */
-
 .album-preview--0 {
   display: grid;
 
@@ -904,20 +907,14 @@ watch(
   font-size: 11px;
 }
 
-/* 1 PHOTO */
-
 .album-preview--1 {
   grid-template-columns: 1fr;
 }
-
-/* 2 PHOTOS */
 
 .album-preview--2 {
   grid-template-columns:
     repeat(2, 1fr);
 }
-
-/* 3 PHOTOS */
 
 .album-preview--3 {
   grid-template-columns:
@@ -933,8 +930,6 @@ watch(
     1 / span 2;
 }
 
-/* 4 PHOTOS */
-
 .album-preview--4 {
   grid-template-columns:
     repeat(2, 1fr);
@@ -942,8 +937,6 @@ watch(
   grid-template-rows:
     repeat(2, 1fr);
 }
-
-/* META */
 
 .album-card__meta {
   display: flex;
@@ -977,8 +970,6 @@ watch(
   font-size: 11px;
 }
 
-/* CARD ACTIONS */
-
 .album-card__actions {
   position: absolute;
 
@@ -1001,8 +992,6 @@ watch(
 .album-card__actions {
   opacity: 1;
 }
-
-/* EDIT */
 
 .album-edit {
   min-height: 170px;
@@ -1054,14 +1043,11 @@ watch(
   margin-top: auto;
 }
 
-/* BUTTONS */
-
 .icon-button {
   width: 29px;
   height: 29px;
 
   display: grid;
-
   place-items: center;
 
   padding: 0;
@@ -1131,22 +1117,20 @@ watch(
   opacity: 0.5;
 }
 
-/* RESPONSIVE */
-
 @media (max-width: 650px) {
   .album-grid {
-  display: grid;
+    display: grid;
 
-  grid-template-columns:
-    repeat(
-      auto-fill,
-      minmax(300px, 1fr)
-    );
+    grid-template-columns:
+      repeat(
+        auto-fill,
+        minmax(300px, 1fr)
+      );
 
-  gap: 20px;
+    gap: 20px;
 
-  align-items: start;
-}
+    align-items: start;
+  }
 
   .album-card__actions {
     opacity: 1;

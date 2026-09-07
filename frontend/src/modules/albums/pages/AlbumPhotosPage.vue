@@ -1,5 +1,6 @@
 <script setup>
 import {
+  computed,
   onBeforeUnmount,
   ref,
   watch,
@@ -20,6 +21,7 @@ import {
 } from '@tabler/icons-vue'
 
 import { useAuthStore } from '@/modules/auth/store/authStore'
+
 import albumService from '../services/albumService'
 
 const route = useRoute()
@@ -32,9 +34,24 @@ const photos = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 
-/* -------------------------
-   CREATE STATE
-------------------------- */
+const canManageProfilePhotos = computed(() => {
+  if (
+    authStore.can(
+      'photos.manage_others',
+    )
+  ) {
+    return true
+  }
+
+  if (!album.value?.user) {
+    return false
+  }
+
+  return (
+    String(album.value.user)
+    === String(authStore.user?.id)
+  )
+})
 
 const isCreateOpen = ref(false)
 const isCreating = ref(false)
@@ -45,13 +62,9 @@ const newPhotoPreview = ref(null)
 
 const createFileInput = ref(null)
 
-/* -------------------------
-   EDIT STATE
-------------------------- */
-
 const editingPhotoId = ref(null)
-const editPhotoTitle = ref('')
 
+const editPhotoTitle = ref('')
 const editPhotoFile = ref(null)
 const editPhotoPreview = ref(null)
 
@@ -60,16 +73,18 @@ const editFileInput = ref(null)
 const updatingPhotoIds = ref([])
 const deletingPhotoIds = ref([])
 
-/* -------------------------
-   PREVIEW HELPERS
-------------------------- */
-
-const revokePreview = (previewUrl) => {
+const revokePreview = (
+  previewUrl,
+) => {
   if (
     previewUrl
-    && previewUrl.startsWith('blob:')
+    && previewUrl.startsWith(
+      'blob:',
+    )
   ) {
-    URL.revokeObjectURL(previewUrl)
+    URL.revokeObjectURL(
+      previewUrl,
+    )
   }
 }
 
@@ -77,18 +92,19 @@ const isImageFile = (file) => {
   return Boolean(
     file
     && file.type
-    && file.type.startsWith('image/'),
+    && file.type.startsWith(
+      'image/',
+    ),
   )
 }
 
-/* -------------------------
-   FETCH
-------------------------- */
-
 let pageRequestId = 0
 
-const loadAlbumPage = async (albumId) => {
-  const requestId = ++pageRequestId
+const loadAlbumPage = async (
+  albumId,
+) => {
+  const requestId =
+    ++pageRequestId
 
   isLoading.value = true
   errorMessage.value = ''
@@ -98,20 +114,31 @@ const loadAlbumPage = async (albumId) => {
       albumResponse,
       photosResponse,
     ] = await Promise.all([
-      albumService.getAlbumById(albumId),
+      albumService.getAlbumById(
+        albumId,
+      ),
       albumService.getPhotosByAlbum(
         albumId,
       ),
     ])
 
-    if (requestId !== pageRequestId) {
+    if (
+      requestId
+      !== pageRequestId
+    ) {
       return
     }
 
-    album.value = albumResponse.data
-    photos.value = photosResponse.data
+    album.value =
+      albumResponse.data
+
+    photos.value =
+      photosResponse.data
   } catch (error) {
-    if (requestId !== pageRequestId) {
+    if (
+      requestId
+      !== pageRequestId
+    ) {
       return
     }
 
@@ -123,15 +150,14 @@ const loadAlbumPage = async (albumId) => {
     errorMessage.value =
       'Album could not be loaded.'
   } finally {
-    if (requestId === pageRequestId) {
+    if (
+      requestId
+      === pageRequestId
+    ) {
       isLoading.value = false
     }
   }
 }
-
-/* -------------------------
-   CREATE FILE
-------------------------- */
 
 const setCreateFile = (file) => {
   revokePreview(
@@ -155,6 +181,7 @@ const setCreateFile = (file) => {
   errorMessage.value = ''
 
   newPhotoFile.value = file
+
   newPhotoPreview.value =
     URL.createObjectURL(file)
 }
@@ -173,10 +200,6 @@ const handleCreateFileChange = (
     setCreateFile(file)
   }
 
-  /*
-   * Aynı dosyayı tekrar seçebilmek için
-   * input değerini temizliyoruz.
-   */
   event.target.value = ''
 }
 
@@ -193,11 +216,16 @@ const clearCreateFile = () => {
   setCreateFile(null)
 }
 
-/* -------------------------
-   CREATE PHOTO
-------------------------- */
-
 const openCreatePhoto = () => {
+  if (
+    !authStore.can(
+      'photos.create',
+    )
+    || !canManageProfilePhotos.value
+  ) {
+    return
+  }
+
   cancelEditing()
 
   isCreateOpen.value = true
@@ -228,7 +256,10 @@ const createPhoto = async () => {
     !title
     || !newPhotoFile.value
     || isCreating.value
-    || !authStore.can('photos.create')
+    || !authStore.can(
+      'photos.create',
+    )
+    || !canManageProfilePhotos.value
   ) {
     return
   }
@@ -239,12 +270,16 @@ const createPhoto = async () => {
   try {
     const response =
       await albumService.createPhoto({
-        album: route.params.albumId,
+        album:
+          route.params.albumId,
         title,
-        image: newPhotoFile.value,
+        image:
+          newPhotoFile.value,
       })
 
-    photos.value.push(response.data)
+    photos.value.push(
+      response.data,
+    )
 
     closeCreatePhoto()
   } catch (error) {
@@ -259,10 +294,6 @@ const createPhoto = async () => {
     isCreating.value = false
   }
 }
-
-/* -------------------------
-   EDIT FILE
-------------------------- */
 
 const setEditFile = (file) => {
   revokePreview(
@@ -286,6 +317,7 @@ const setEditFile = (file) => {
   errorMessage.value = ''
 
   editPhotoFile.value = file
+
   editPhotoPreview.value =
     URL.createObjectURL(file)
 }
@@ -316,16 +348,24 @@ const handleEditDrop = (event) => {
   }
 }
 
-/* -------------------------
-   EDIT PHOTO
-------------------------- */
-
 const startEditing = (photo) => {
+  if (
+    !authStore.can(
+      'photos.update',
+    )
+    || !canManageProfilePhotos.value
+  ) {
+    return
+  }
+
   closeCreatePhoto()
   cancelEditing()
 
-  editingPhotoId.value = photo.id
-  editPhotoTitle.value = photo.title
+  editingPhotoId.value =
+    photo.id
+
+  editPhotoTitle.value =
+    photo.title
 }
 
 const cancelEditing = () => {
@@ -334,8 +374,8 @@ const cancelEditing = () => {
   )
 
   editingPhotoId.value = null
-
   editPhotoTitle.value = ''
+
   editPhotoFile.value = null
   editPhotoPreview.value = null
 
@@ -344,7 +384,9 @@ const cancelEditing = () => {
   }
 }
 
-const updatePhoto = async (photo) => {
+const updatePhoto = async (
+  photo,
+) => {
   const title =
     editPhotoTitle.value.trim()
 
@@ -353,7 +395,10 @@ const updatePhoto = async (photo) => {
     || updatingPhotoIds.value.includes(
       photo.id,
     )
-    || !authStore.can('photos.update')
+    || !authStore.can(
+      'photos.update',
+    )
+    || !canManageProfilePhotos.value
   ) {
     return
   }
@@ -362,7 +407,9 @@ const updatePhoto = async (photo) => {
     title !== photo.title
 
   const imageChanged =
-    Boolean(editPhotoFile.value)
+    Boolean(
+      editPhotoFile.value,
+    )
 
   if (
     !titleChanged
@@ -384,10 +431,6 @@ const updatePhoto = async (photo) => {
       title,
     }
 
-    /*
-     * Yeni görsel seçilmediyse image
-     * request'e hiç eklenmiyor.
-     */
     if (editPhotoFile.value) {
       payload.image =
         editPhotoFile.value
@@ -422,14 +465,11 @@ const updatePhoto = async (photo) => {
   } finally {
     updatingPhotoIds.value =
       updatingPhotoIds.value.filter(
-        (id) => id !== photo.id,
+        (id) =>
+          id !== photo.id,
       )
   }
 }
-
-/* -------------------------
-   DELETE
-------------------------- */
 
 const deletePhoto = async (
   photoId,
@@ -438,7 +478,10 @@ const deletePhoto = async (
     deletingPhotoIds.value.includes(
       photoId,
     )
-    || !authStore.can('photos.delete')
+    || !authStore.can(
+      'photos.delete',
+    )
+    || !canManageProfilePhotos.value
   ) {
     return
   }
@@ -477,14 +520,11 @@ const deletePhoto = async (
   } finally {
     deletingPhotoIds.value =
       deletingPhotoIds.value.filter(
-        (id) => id !== photoId,
+        (id) =>
+          id !== photoId,
       )
   }
 }
-
-/* -------------------------
-   NAVIGATION
-------------------------- */
 
 const goBack = () => {
   router.push({
@@ -496,29 +536,17 @@ const goBack = () => {
   })
 }
 
-/* -------------------------
-   HELPERS
-------------------------- */
-
-const isUpdating = (
-  photoId,
-) => {
+const isUpdating = (photoId) => {
   return updatingPhotoIds.value.includes(
     photoId,
   )
 }
 
-const isDeleting = (
-  photoId,
-) => {
+const isDeleting = (photoId) => {
   return deletingPhotoIds.value.includes(
     photoId,
   )
 }
-
-/* -------------------------
-   ROUTE
-------------------------- */
 
 watch(
   () => route.params.albumId,
@@ -553,8 +581,6 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="photos-page">
-    <!-- HEADER -->
-
     <div class="photos-header">
       <div>
         <button
@@ -571,13 +597,19 @@ onBeforeUnmount(() => {
         </button>
 
         <h1>
-          {{ album?.title || 'Album' }}
+          {{
+            album?.title
+            || 'Album'
+          }}
         </h1>
       </div>
 
       <button
         v-if="
-          authStore.can('photos.create')
+          authStore.can(
+            'photos.create',
+          )
+          && canManageProfilePhotos
           && !isCreateOpen
         "
         type="button"
@@ -593,8 +625,6 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <!-- ERROR -->
-
     <p
       v-if="errorMessage"
       class="
@@ -605,17 +635,19 @@ onBeforeUnmount(() => {
       {{ errorMessage }}
     </p>
 
-    <!-- CREATE -->
-
     <form
       v-if="isCreateOpen"
       class="photo-create"
-      @submit.prevent="createPhoto"
+      @submit.prevent="
+        createPhoto
+      "
     >
       <button
         type="button"
         class="drop-zone"
-        @click="openCreateFilePicker"
+        @click="
+          openCreateFilePicker
+        "
         @dragover.prevent
         @drop.prevent="
           handleCreateDrop
@@ -624,8 +656,12 @@ onBeforeUnmount(() => {
         <img
           v-if="newPhotoPreview"
           :src="newPhotoPreview"
-          alt="Selected image preview"
-          class="drop-zone__preview"
+          alt="
+            Selected image preview
+          "
+          class="
+            drop-zone__preview
+          "
         />
 
         <template v-else>
@@ -648,7 +684,9 @@ onBeforeUnmount(() => {
         ref="createFileInput"
         type="file"
         accept="image/*"
-        class="hidden-file-input"
+        class="
+          hidden-file-input
+        "
         @change="
           handleCreateFileChange
         "
@@ -664,7 +702,9 @@ onBeforeUnmount(() => {
 
         <button
           type="button"
-          aria-label="Remove selected image"
+          aria-label="
+            Remove selected image
+          "
           @click="clearCreateFile"
         >
           <IconX
@@ -710,11 +750,6 @@ onBeforeUnmount(() => {
       </div>
     </form>
 
-    <!--
-      Tek bir edit file input.
-      Artık v-for içinde değil.
-    -->
-
     <input
       ref="editFileInput"
       type="file"
@@ -724,8 +759,6 @@ onBeforeUnmount(() => {
         handleEditFileChange
       "
     />
-
-    <!-- STATES -->
 
     <p
       v-if="isLoading"
@@ -744,8 +777,6 @@ onBeforeUnmount(() => {
       No photos found.
     </p>
 
-    <!-- GALLERY -->
-
     <div
       v-else
       class="photo-grid"
@@ -755,8 +786,6 @@ onBeforeUnmount(() => {
         :key="photo.id"
         class="photo-card"
       >
-        <!-- EDIT MODE -->
-
         <form
           v-if="
             editingPhotoId
@@ -827,7 +856,9 @@ onBeforeUnmount(() => {
             autocomplete="off"
           />
 
-          <div class="form-actions">
+          <div
+            class="form-actions"
+          >
             <button
               type="button"
               class="text-button"
@@ -852,8 +883,6 @@ onBeforeUnmount(() => {
             </button>
           </div>
         </form>
-
-        <!-- NORMAL MODE -->
 
         <template v-else>
           <div
@@ -880,11 +909,10 @@ onBeforeUnmount(() => {
                   authStore.can(
                     'photos.update',
                   )
+                  && canManageProfilePhotos
                 "
                 type="button"
-                class="
-                  overlay-button
-                "
+                class="overlay-button"
                 aria-label="Edit photo"
                 @click="
                   startEditing(photo)
@@ -901,6 +929,7 @@ onBeforeUnmount(() => {
                   authStore.can(
                     'photos.delete',
                   )
+                  && canManageProfilePhotos
                 "
                 type="button"
                 class="
@@ -942,8 +971,6 @@ onBeforeUnmount(() => {
 .photos-page {
   width: 100%;
 }
-
-/* HEADER */
 
 .photos-header {
   display: flex;
@@ -999,8 +1026,6 @@ onBeforeUnmount(() => {
   color: var(--color-primary);
 }
 
-/* STATES */
-
 .page-state {
   color: var(--color-subtitle);
 
@@ -1010,8 +1035,6 @@ onBeforeUnmount(() => {
 .page-state--error {
   color: #b42318;
 }
-
-/* CREATE */
 
 .photo-create {
   max-width: 620px;
@@ -1122,7 +1145,6 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 
   display: grid;
-
   place-items: center;
 
   padding: 4px;
@@ -1135,8 +1157,6 @@ onBeforeUnmount(() => {
 
   cursor: pointer;
 }
-
-/* INPUT */
 
 .photo-input {
   width: 100%;
@@ -1164,8 +1184,6 @@ onBeforeUnmount(() => {
   border-color:
     rgba(82, 63, 158, 0.45);
 }
-
-/* GALLERY */
 
 .photo-grid {
   display: grid;
@@ -1200,7 +1218,8 @@ onBeforeUnmount(() => {
 }
 
 .photo-card:hover {
-  transform: translateY(-2px);
+  transform:
+    translateY(-2px);
 
   border-color:
     rgba(82, 63, 158, 0.2);
@@ -1267,7 +1286,6 @@ onBeforeUnmount(() => {
   height: 31px;
 
   display: grid;
-
   place-items: center;
 
   padding: 0;
@@ -1312,8 +1330,6 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-/* EDIT */
 
 .photo-edit {
   display: flex;
@@ -1390,8 +1406,6 @@ onBeforeUnmount(() => {
   border-radius: 6px;
 }
 
-/* ACTIONS */
-
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -1431,8 +1445,6 @@ onBeforeUnmount(() => {
   opacity: 0.5;
 }
 
-/* RESPONSIVE */
-
 @media (max-width: 650px) {
   .photos-header {
     align-items: flex-start;
@@ -1441,7 +1453,8 @@ onBeforeUnmount(() => {
   }
 
   .photo-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns:
+      1fr;
   }
 
   .photo-card__image-wrapper,

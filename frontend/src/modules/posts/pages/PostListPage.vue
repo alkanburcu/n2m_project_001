@@ -1,5 +1,6 @@
 <script setup>
 import {
+  computed,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -19,35 +20,36 @@ import {
 } from '@tabler/icons-vue'
 
 import { useAuthStore } from '@/modules/auth/store/authStore'
+
 import postService from '../services/postService'
 
 const route = useRoute()
 const authStore = useAuthStore()
 
-/* -------------------------
-   POSTS
-------------------------- */
+const canManageProfilePosts = computed(() => {
+  const isOwnProfile =
+    String(route.params.id)
+    === String(authStore.user?.id)
+
+  return (
+    isOwnProfile
+    || authStore.can(
+      'posts.manage_others',
+    )
+  )
+})
 
 const posts = ref([])
 
 const isLoading = ref(false)
 const errorMessage = ref('')
 
-/* -------------------------
-   CREATE POST
-------------------------- */
-
 const isCreateOpen = ref(false)
 const isCreatingPost = ref(false)
 
 const newPostTitle = ref('')
 const newPostBody = ref('')
-
 const newPostTitleInput = ref(null)
-
-/* -------------------------
-   EDIT POST
-------------------------- */
 
 const editingPostId = ref(null)
 
@@ -56,10 +58,6 @@ const editBody = ref('')
 
 const updatingPostIds = ref([])
 const deletingPostIds = ref([])
-
-/* -------------------------
-   MODAL + COMMENTS
-------------------------- */
 
 const selectedPost = ref(null)
 
@@ -73,17 +71,15 @@ const commentsErrorMessage = ref('')
 
 const commentInput = ref(null)
 
-/* -------------------------
-   FETCH POSTS
-------------------------- */
-
 const fetchPosts = async (userId) => {
   isLoading.value = true
   errorMessage.value = ''
 
   try {
     const response =
-      await postService.getPostsByUser(userId)
+      await postService.getPostsByUser(
+        userId,
+      )
 
     posts.value = response.data
   } catch (error) {
@@ -99,11 +95,14 @@ const fetchPosts = async (userId) => {
   }
 }
 
-/* -------------------------
-   CREATE POST
-------------------------- */
-
 const openCreatePost = async () => {
+  if (
+    !authStore.can('posts.create')
+    || !canManageProfilePosts.value
+  ) {
+    return
+  }
+
   isCreateOpen.value = true
 
   await nextTick()
@@ -119,14 +118,20 @@ const closeCreatePost = () => {
 }
 
 const createPost = async () => {
-  const title = newPostTitle.value.trim()
-  const body = newPostBody.value.trim()
+  const title =
+    newPostTitle.value.trim()
+
+  const body =
+    newPostBody.value.trim()
 
   if (
     !title
     || !body
     || isCreatingPost.value
-    || !authStore.can('posts.create')
+    || !authStore.can(
+      'posts.create',
+    )
+    || !canManageProfilePosts.value
   ) {
     return
   }
@@ -142,7 +147,9 @@ const createPost = async () => {
         body,
       })
 
-    posts.value.push(response.data)
+    posts.value.push(
+      response.data,
+    )
 
     closeCreatePost()
   } catch (error) {
@@ -158,13 +165,15 @@ const createPost = async () => {
   }
 }
 
-/* -------------------------
-   EDIT POST
-------------------------- */
-
 const startEditing = (post) => {
-  editingPostId.value = post.id
+  if (
+    !authStore.can('posts.update')
+    || !canManageProfilePosts.value
+  ) {
+    return
+  }
 
+  editingPostId.value = post.id
   editTitle.value = post.title
   editBody.value = post.body
 }
@@ -177,14 +186,22 @@ const cancelEditing = () => {
 }
 
 const updatePost = async (post) => {
-  const title = editTitle.value.trim()
-  const body = editBody.value.trim()
+  const title =
+    editTitle.value.trim()
+
+  const body =
+    editBody.value.trim()
 
   if (
     !title
     || !body
-    || updatingPostIds.value.includes(post.id)
-    || !authStore.can('posts.update')
+    || updatingPostIds.value.includes(
+      post.id,
+    )
+    || !authStore.can(
+      'posts.update',
+    )
+    || !canManageProfilePosts.value
   ) {
     return
   }
@@ -198,7 +215,9 @@ const updatePost = async (post) => {
     return
   }
 
-  updatingPostIds.value.push(post.id)
+  updatingPostIds.value.push(
+    post.id,
+  )
 
   errorMessage.value = ''
 
@@ -214,15 +233,21 @@ const updatePost = async (post) => {
 
     const index =
       posts.value.findIndex(
-        (item) => item.id === post.id,
+        (item) =>
+          item.id === post.id,
       )
 
     if (index !== -1) {
-      posts.value[index] = response.data
+      posts.value[index] =
+        response.data
     }
 
-    if (selectedPost.value?.id === post.id) {
-      selectedPost.value = response.data
+    if (
+      selectedPost.value?.id
+      === post.id
+    ) {
+      selectedPost.value =
+        response.data
     }
 
     cancelEditing()
@@ -237,40 +262,55 @@ const updatePost = async (post) => {
   } finally {
     updatingPostIds.value =
       updatingPostIds.value.filter(
-        (id) => id !== post.id,
+        (id) =>
+          id !== post.id,
       )
   }
 }
 
-/* -------------------------
-   DELETE POST
-------------------------- */
-
-const deletePost = async (postId) => {
+const deletePost = async (
+  postId,
+) => {
   if (
-    deletingPostIds.value.includes(postId)
-    || !authStore.can('posts.delete')
+    deletingPostIds.value.includes(
+      postId,
+    )
+    || !authStore.can(
+      'posts.delete',
+    )
+    || !canManageProfilePosts.value
   ) {
     return
   }
 
-  deletingPostIds.value.push(postId)
+  deletingPostIds.value.push(
+    postId,
+  )
 
   errorMessage.value = ''
 
   try {
-    await postService.deletePost(postId)
+    await postService.deletePost(
+      postId,
+    )
 
     posts.value =
       posts.value.filter(
-        (post) => post.id !== postId,
+        (post) =>
+          post.id !== postId,
       )
 
-    if (selectedPost.value?.id === postId) {
+    if (
+      selectedPost.value?.id
+      === postId
+    ) {
       closePost()
     }
 
-    if (editingPostId.value === postId) {
+    if (
+      editingPostId.value
+      === postId
+    ) {
       cancelEditing()
     }
   } catch (error) {
@@ -284,16 +324,15 @@ const deletePost = async (postId) => {
   } finally {
     deletingPostIds.value =
       deletingPostIds.value.filter(
-        (id) => id !== postId,
+        (id) =>
+          id !== postId,
       )
   }
 }
 
-/* -------------------------
-   COMMENTS
-------------------------- */
-
-const fetchComments = async (postId) => {
+const fetchComments = async (
+  postId,
+) => {
   isCommentsLoading.value = true
 
   commentsErrorMessage.value = ''
@@ -304,7 +343,8 @@ const fetchComments = async (postId) => {
         postId,
       )
 
-    comments.value = response.data
+    comments.value =
+      response.data
   } catch (error) {
     console.error(
       'Failed to fetch comments:',
@@ -326,9 +366,12 @@ const openPost = async (post) => {
 
   commentsErrorMessage.value = ''
 
-  document.body.style.overflow = 'hidden'
+  document.body.style.overflow =
+    'hidden'
 
-  await fetchComments(post.id)
+  await fetchComments(
+    post.id,
+  )
 }
 
 const closePost = () => {
@@ -343,13 +386,16 @@ const closePost = () => {
 }
 
 const createComment = async () => {
-  const body = newComment.value.trim()
+  const body =
+    newComment.value.trim()
 
   if (
     !body
     || !selectedPost.value
     || isCreatingComment.value
-    || !authStore.can('comments.create')
+    || !authStore.can(
+      'comments.create',
+    )
   ) {
     return
   }
@@ -365,7 +411,9 @@ const createComment = async () => {
         body,
       })
 
-    comments.value.push(response.data)
+    comments.value.push(
+      response.data,
+    )
 
     newComment.value = ''
 
@@ -385,7 +433,9 @@ const createComment = async () => {
   }
 }
 
-const getInitial = (displayName) => {
+const getInitial = (
+  displayName,
+) => {
   return (
     displayName
       ?.trim()
@@ -394,10 +444,6 @@ const getInitial = (displayName) => {
     || '?'
   )
 }
-
-/* -------------------------
-   HELPERS
-------------------------- */
 
 const isUpdating = (postId) => {
   return updatingPostIds.value.includes(
@@ -465,6 +511,7 @@ onBeforeUnmount(() => {
       <button
         v-if="
           authStore.can('posts.create')
+          && canManageProfilePosts
           && !isCreateOpen
         "
         type="button"
@@ -486,8 +533,6 @@ onBeforeUnmount(() => {
     >
       {{ errorMessage }}
     </p>
-
-    <!-- CREATE POST -->
 
     <form
       v-if="isCreateOpen"
@@ -540,8 +585,6 @@ onBeforeUnmount(() => {
       </div>
     </form>
 
-    <!-- STATES -->
-
     <p
       v-if="isLoading"
       class="page-state"
@@ -559,8 +602,6 @@ onBeforeUnmount(() => {
       No posts found.
     </p>
 
-    <!-- POSTS -->
-
     <div
       v-else
       class="posts-list"
@@ -570,12 +611,15 @@ onBeforeUnmount(() => {
         :key="post.id"
         class="post-row"
       >
-        <!-- EDIT MODE -->
-
         <form
-          v-if="editingPostId === post.id"
+          v-if="
+            editingPostId
+            === post.id
+          "
           class="post-editor"
-          @submit.prevent="updatePost(post)"
+          @submit.prevent="
+            updatePost(post)
+          "
         >
           <input
             v-model="editTitle"
@@ -618,8 +662,6 @@ onBeforeUnmount(() => {
           </div>
         </form>
 
-        <!-- READ MODE -->
-
         <template v-else>
           <div class="post-row__content">
             <h2>
@@ -633,7 +675,12 @@ onBeforeUnmount(() => {
 
           <div class="post-row__actions">
             <button
-              v-if="authStore.can('posts.update')"
+              v-if="
+                authStore.can(
+                  'posts.update',
+                )
+                && canManageProfilePosts
+              "
               type="button"
               class="icon-button"
               aria-label="Edit post"
@@ -646,12 +693,24 @@ onBeforeUnmount(() => {
             </button>
 
             <button
-              v-if="authStore.can('posts.delete')"
+              v-if="
+                authStore.can(
+                  'posts.delete',
+                )
+                && canManageProfilePosts
+              "
               type="button"
-              class="icon-button icon-button--danger"
-              :disabled="isDeleting(post.id)"
+              class="
+                icon-button
+                icon-button--danger
+              "
+              :disabled="
+                isDeleting(post.id)
+              "
               aria-label="Delete post"
-              @click="deletePost(post.id)"
+              @click="
+                deletePost(post.id)
+              "
             >
               <IconTrash
                 :size="16"
@@ -676,8 +735,6 @@ onBeforeUnmount(() => {
       </article>
     </div>
 
-    <!-- POST MODAL -->
-
     <Teleport to="body">
       <Transition name="modal">
         <div
@@ -689,12 +746,16 @@ onBeforeUnmount(() => {
             class="post-modal"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="post-modal-title"
+            aria-labelledby="
+              post-modal-title
+            "
           >
             <button
               type="button"
               class="post-modal__close"
-              aria-label="Close post details"
+              aria-label="
+                Close post details
+              "
               @click="closePost"
             >
               <IconX
@@ -702,8 +763,6 @@ onBeforeUnmount(() => {
                 :stroke-width="1.8"
               />
             </button>
-
-            <!-- POST DETAIL -->
 
             <div class="post-modal__post">
               <h2 id="post-modal-title">
@@ -715,9 +774,9 @@ onBeforeUnmount(() => {
               </p>
             </div>
 
-            <!-- COMMENTS -->
-
-            <div class="post-modal__comments">
+            <div
+              class="post-modal__comments"
+            >
               <div class="comments-header">
                 <IconMessageCircle
                   :size="17"
@@ -729,7 +788,9 @@ onBeforeUnmount(() => {
 
               <div class="comments-content">
                 <p
-                  v-if="isCommentsLoading"
+                  v-if="
+                    isCommentsLoading
+                  "
                   class="comments-state"
                 >
                   Loading comments...
@@ -738,15 +799,23 @@ onBeforeUnmount(() => {
                 <p
                   v-else-if="
                     commentsErrorMessage
-                    && comments.length === 0
+                    && comments.length
+                      === 0
                   "
-                  class="comments-state comments-state--error"
+                  class="
+                    comments-state
+                    comments-state--error
+                  "
                 >
-                  {{ commentsErrorMessage }}
+                  {{
+                    commentsErrorMessage
+                  }}
                 </p>
 
                 <p
-                  v-else-if="comments.length === 0"
+                  v-else-if="
+                    comments.length === 0
+                  "
                   class="comments-state"
                 >
                   No comments yet.
@@ -757,11 +826,17 @@ onBeforeUnmount(() => {
                   class="comments-list"
                 >
                   <article
-                    v-for="comment in comments"
+                    v-for="
+                      comment in comments
+                    "
                     :key="comment.id"
                     class="comment"
                   >
-                    <div class="comment__avatar">
+                    <div
+                      class="
+                        comment__avatar
+                      "
+                    >
                       {{
                         getInitial(
                           comment.display_name,
@@ -769,9 +844,15 @@ onBeforeUnmount(() => {
                       }}
                     </div>
 
-                    <div class="comment__content">
+                    <div
+                      class="
+                        comment__content
+                      "
+                    >
                       <strong>
-                        {{ comment.display_name }}
+                        {{
+                          comment.display_name
+                        }}
                       </strong>
 
                       <p>
@@ -782,29 +863,41 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <!-- INSTAGRAM-LIKE COMMENT INPUT -->
-
               <form
                 v-if="
-                  authStore.can('comments.create')
+                  authStore.can(
+                    'comments.create',
+                  )
                 "
                 class="comment-composer"
-                @submit.prevent="createComment"
+                @submit.prevent="
+                  createComment
+                "
               >
                 <input
                   ref="commentInput"
                   v-model="newComment"
                   type="text"
-                  class="comment-composer__input"
-                  placeholder="Add a comment..."
+                  class="
+                    comment-composer__input
+                  "
+                  placeholder="
+                    Add a comment...
+                  "
                   autocomplete="off"
-                  :disabled="isCreatingComment"
+                  :disabled="
+                    isCreatingComment
+                  "
                 />
 
                 <button
                   type="submit"
-                  class="comment-composer__send"
-                  aria-label="Send comment"
+                  class="
+                    comment-composer__send
+                  "
+                  aria-label="
+                    Send comment
+                  "
                   :disabled="
                     isCreatingComment
                     || !newComment.trim()
@@ -822,9 +915,13 @@ onBeforeUnmount(() => {
                   commentsErrorMessage
                   && comments.length > 0
                 "
-                class="comment-composer__error"
+                class="
+                  comment-composer__error
+                "
               >
-                {{ commentsErrorMessage }}
+                {{
+                  commentsErrorMessage
+                }}
               </p>
             </div>
           </section>
@@ -852,6 +949,7 @@ onBeforeUnmount(() => {
   margin: 0;
 
   color: var(--color-title);
+
   font-size: 28px;
   font-weight: 700;
 }
@@ -860,6 +958,7 @@ onBeforeUnmount(() => {
   margin: 16px 0;
 
   color: var(--color-subtitle);
+
   font-size: 13px;
 }
 
@@ -867,14 +966,11 @@ onBeforeUnmount(() => {
   color: #b42318;
 }
 
-/* -------------------------
-   BUTTONS
-------------------------- */
-
 .new-post-button,
 .see-more-button {
   display: inline-flex;
   align-items: center;
+
   gap: 7px;
 
   padding: 7px 9px;
@@ -886,6 +982,7 @@ onBeforeUnmount(() => {
   font-weight: 600;
 
   background: transparent;
+
   border: 0;
   border-radius: 7px;
 
@@ -921,6 +1018,7 @@ onBeforeUnmount(() => {
   color: #858b97;
 
   background: transparent;
+
   border: 0;
   border-radius: 7px;
 
@@ -947,12 +1045,9 @@ onBeforeUnmount(() => {
 
 .icon-button:disabled {
   cursor: wait;
+
   opacity: 0.4;
 }
-
-/* -------------------------
-   POST LIST
-------------------------- */
 
 .posts-list {
   border-top:
@@ -965,6 +1060,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+
   gap: 24px;
 
   padding: 18px;
@@ -982,6 +1078,7 @@ onBeforeUnmount(() => {
   margin: 0 0 8px;
 
   color: var(--color-title);
+
   font-size: 14px;
   font-weight: 600;
 }
@@ -990,6 +1087,7 @@ onBeforeUnmount(() => {
   margin: 0;
 
   color: var(--color-subtitle);
+
   font-size: 12px;
   line-height: 1.55;
 
@@ -1001,34 +1099,36 @@ onBeforeUnmount(() => {
 
   display: flex;
   align-items: center;
+
   gap: 4px;
 }
-
-/* -------------------------
-   POST EDITOR
-------------------------- */
 
 .post-editor {
   width: 100%;
 
   display: flex;
   flex-direction: column;
+
   gap: 10px;
 }
 
 .post-editor--new {
   margin-bottom: 22px;
+
   padding: 18px;
 
   background: #ffffff;
+
   border:
     1px solid var(--color-border);
+
   border-radius: 12px;
 }
 
 .post-editor__title,
 .post-editor__body {
   width: 100%;
+
   box-sizing: border-box;
 
   color: var(--color-title);
@@ -1036,8 +1136,10 @@ onBeforeUnmount(() => {
   font: inherit;
 
   background: transparent;
+
   border:
     1px solid var(--color-border);
+
   border-radius: 8px;
 
   outline: none;
@@ -1078,6 +1180,7 @@ onBeforeUnmount(() => {
 .post-editor__actions {
   display: flex;
   justify-content: flex-end;
+
   gap: 8px;
 }
 
@@ -1113,15 +1216,13 @@ onBeforeUnmount(() => {
 
 .primary-button:disabled {
   cursor: not-allowed;
+
   opacity: 0.5;
 }
 
-/* -------------------------
-   MODAL
-------------------------- */
-
 .modal-backdrop {
   position: fixed;
+
   inset: 0;
 
   display: grid;
@@ -1142,6 +1243,7 @@ onBeforeUnmount(() => {
   height: min(500px, 80vh);
 
   display: grid;
+
   grid-template-columns:
     minmax(0, 1.1fr)
     minmax(300px, 0.9fr);
@@ -1149,6 +1251,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
 
   background: #ffffff;
+
   border-radius: 16px;
 
   box-shadow:
@@ -1158,6 +1261,7 @@ onBeforeUnmount(() => {
 
 .post-modal__close {
   position: absolute;
+
   top: 14px;
   right: 14px;
 
@@ -1172,6 +1276,7 @@ onBeforeUnmount(() => {
   color: var(--color-title);
 
   background: transparent;
+
   border: 0;
   border-radius: 7px;
 
@@ -1187,10 +1292,6 @@ onBeforeUnmount(() => {
     rgba(82, 63, 158, 0.07);
 }
 
-/* -------------------------
-   MODAL POST
-------------------------- */
-
 .post-modal__post {
   overflow-y: auto;
 
@@ -1201,6 +1302,7 @@ onBeforeUnmount(() => {
   margin: 0 0 18px;
 
   color: var(--color-title);
+
   font-size: 17px;
   font-weight: 600;
 }
@@ -1209,15 +1311,12 @@ onBeforeUnmount(() => {
   margin: 0;
 
   color: var(--color-subtitle);
+
   font-size: 13px;
   line-height: 1.7;
 
   white-space: pre-line;
 }
-
-/* -------------------------
-   COMMENTS
-------------------------- */
 
 .post-modal__comments {
   min-width: 0;
@@ -1235,6 +1334,7 @@ onBeforeUnmount(() => {
 
   display: flex;
   align-items: center;
+
   gap: 7px;
 
   padding: 28px 48px 18px 24px;
@@ -1244,6 +1344,7 @@ onBeforeUnmount(() => {
   margin: 0;
 
   color: var(--color-title);
+
   font-size: 15px;
   font-weight: 600;
 }
@@ -1254,6 +1355,7 @@ onBeforeUnmount(() => {
 
 .comments-content {
   min-height: 0;
+
   flex: 1;
 
   overflow-y: auto;
@@ -1264,12 +1366,14 @@ onBeforeUnmount(() => {
 .comments-list {
   display: flex;
   flex-direction: column;
+
   gap: 20px;
 }
 
 .comment {
   display: flex;
   align-items: flex-start;
+
   gap: 10px;
 }
 
@@ -1288,6 +1392,7 @@ onBeforeUnmount(() => {
   font-weight: 700;
 
   background: #f0eef6;
+
   border-radius: 50%;
 }
 
@@ -1301,6 +1406,7 @@ onBeforeUnmount(() => {
   margin-bottom: 4px;
 
   color: var(--color-title);
+
   font-size: 11px;
   font-weight: 600;
 }
@@ -1309,6 +1415,7 @@ onBeforeUnmount(() => {
   margin: 0;
 
   color: var(--color-subtitle);
+
   font-size: 11px;
   line-height: 1.5;
 }
@@ -1317,6 +1424,7 @@ onBeforeUnmount(() => {
   margin: 0;
 
   color: var(--color-subtitle);
+
   font-size: 12px;
 }
 
@@ -1324,15 +1432,12 @@ onBeforeUnmount(() => {
   color: #b42318;
 }
 
-/* -------------------------
-   COMMENT COMPOSER
-------------------------- */
-
 .comment-composer {
   flex-shrink: 0;
 
   display: flex;
   align-items: center;
+
   gap: 8px;
 
   padding: 12px 14px;
@@ -1343,6 +1448,7 @@ onBeforeUnmount(() => {
 
 .comment-composer__input {
   min-width: 0;
+
   flex: 1;
 
   padding: 9px 11px;
@@ -1353,7 +1459,9 @@ onBeforeUnmount(() => {
   font-size: 12px;
 
   background: #f8f8fa;
+
   border: 1px solid transparent;
+
   border-radius: 18px;
 
   outline: none;
@@ -1384,6 +1492,7 @@ onBeforeUnmount(() => {
   color: var(--color-primary);
 
   background: transparent;
+
   border: 0;
   border-radius: 50%;
 
@@ -1397,6 +1506,7 @@ onBeforeUnmount(() => {
 
 .comment-composer__send:disabled {
   cursor: not-allowed;
+
   opacity: 0.35;
 }
 
@@ -1404,19 +1514,18 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 
   margin: 0;
+
   padding: 0 16px 10px;
 
   color: #b42318;
+
   font-size: 11px;
 }
 
-/* -------------------------
-   TRANSITION
-------------------------- */
-
 .modal-enter-active,
 .modal-leave-active {
-  transition: opacity 0.18s ease;
+  transition:
+    opacity 0.18s ease;
 }
 
 .modal-enter-active .post-modal,
@@ -1440,10 +1549,6 @@ onBeforeUnmount(() => {
     scale(0.985);
 }
 
-/* -------------------------
-   RESPONSIVE
-------------------------- */
-
 @media (max-width: 760px) {
   .post-row {
     align-items: flex-start;
@@ -1458,6 +1563,7 @@ onBeforeUnmount(() => {
     height: min(700px, 90vh);
 
     grid-template-columns: 1fr;
+
     grid-template-rows:
       minmax(180px, auto)
       minmax(0, 1fr);

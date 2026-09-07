@@ -10,28 +10,39 @@ const userRoutes = [
     path: '/users',
     name: 'users',
     component: UserListPage,
-    meta: {requiresAuth: true, permission: 'users.list',},
+
+    meta: {
+      requiresAuth: true,
+      permission: 'users.list',
+    },
   },
+
   {
     path: '/users/:id',
     component: UserDetailLayout,
-    meta: {requiresAuth: true,userScoped: true,},
+
+    meta: {
+      requiresAuth: true,
+    },
+
     children: [
       {
         path: '',
+
         redirect: (to) => ({
-          name: 'user-todos',
+          name: 'user-posts',
+
           params: {
             id: to.params.id,
           },
         }),
       },
+
       ...todoRoutes,
       ...postRoutes,
       ...albumRoutes,
     ],
   },
 ]
-
 
 export default userRoutes
