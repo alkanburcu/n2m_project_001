@@ -1,4 +1,8 @@
 from django.db import models
+from django.conf import settings
+from django.db.models import Q
+from django.db.models.functions import Lower
+
 from django.contrib.auth.models import AbstractUser
 from core.core_models import BaseModel
 
@@ -36,3 +40,29 @@ class Company(BaseModel):
     def __str__(self):
         return self.name
 
+class UserEmail(BaseModel):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="emails",
+    )
+
+    email = models.EmailField()
+
+    is_primary = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                Lower("email"),
+                name="unique_user_email_ci",
+            ),
+            models.UniqueConstraint(
+                fields=["user"],
+                condition=Q(is_primary=True),
+                name="unique_primary_email_per_user",
+            ),
+        ]
+
+    def __str__(self):
+        return self.email

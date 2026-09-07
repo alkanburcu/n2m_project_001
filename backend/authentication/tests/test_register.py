@@ -4,6 +4,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from users.services.user_service import (create_application_user,)
+
 
 User = get_user_model()
 
@@ -28,9 +30,17 @@ class RegisterTests(APITestCase):
         self.assertTrue(
             User.objects.filter(username="test_user").exists())
 
-        user = User.objects.get( username="test_user")
+        user = User.objects.get(username="test_user",)
 
-        self.assertEqual(user.email, "test_user@test.com",)
+        email_record = user.emails.get(
+            is_primary=True,
+            is_active=True,
+        )
+
+        self.assertEqual(
+            email_record.email,
+            "test_user@test.com",
+        )
 
     def test_password_is_hashed(self):
         response = self.client.post(self.url, self.valid_data,)
@@ -69,18 +79,27 @@ class RegisterTests(APITestCase):
         self.assertIn("username",response.data,)
 
     def test_duplicate_email(self):
-        User.objects.create_user(
+        create_application_user(
             username="existing_user",
             email="test_user@test.com",
             password="StrongPassword123!",
         )
 
-        response = self.client.post(self.url, self.valid_data,)
+        response = self.client.post(
+            self.url,
+            self.valid_data,
+            format="json",
+        )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
 
-        self.assertIn("email",response.data,)
-
+        self.assertIn(
+            "email",
+            response.data,
+        )
     def test_weak_password(self):
         data = self.valid_data.copy()
 

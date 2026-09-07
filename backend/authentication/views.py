@@ -8,7 +8,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from .serializers import LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, CurrentUserSerializer
-from .services import send_password_reset_email, get_password_reset_code
+
+from .services.email_service import (send_password_reset_link_email,)
+from .services.password_reset_service import (generate_password_reset_link,get_active_user_email,)
+
 from users.serializers import UserCreateSerializer
 
 User = get_user_model()
@@ -50,40 +53,39 @@ class PasswordResetRequestView(APIView):
             raise_exception=True,
         )
 
-        user = serializer.validated_data[
-            "user"
+        email = serializer.validated_data[
+            "email"
         ]
 
-        if user is None:
-            return Response(
-                {
-                    "error": (
-                        "The username or email "
-                        "is incorrect."
-                    )
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        code = get_password_reset_code(
-            user,
+        email_record = get_active_user_email(
+            email,
         )
 
-        if code is not None:
-            send_password_reset_email(
-                user,
-                code,
+        if email_record is not None:
+            user = email_record.user
+
+            reset_link = (
+                generate_password_reset_link(
+                    user,
+                )
+            )
+
+            send_password_reset_link_email(
+                email=email_record.email,
+                reset_link=reset_link,
             )
 
         return Response(
             {
                 "message": (
-                    "A password reset code "
-                    "has been sent."
+                    "If an account exists for "
+                    "this email, a password "
+                    "reset link has been sent."
                 )
             },
             status=status.HTTP_200_OK,
         )
+    
 class PasswordResetConfirmView(APIView):
     permission_classes = []
     authentication_classes = []
@@ -110,17 +112,37 @@ class PasswordResetConfirmView(APIView):
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
-    authentication_classes = []  # Disable authentication for this view
+    authentication_classes = []
 
     def post(self, request):
-        serializer = UserCreateSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            return Response({'message': 'User registered successfully',
-                             'user': {'id': user.id, 'username': user.username, 'email': user.email},
-                             }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = UserCreateSerializer(
+            data=request.data,
+        )
 
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        user = serializer.save()
+
+        primary_email = user.emails.get(
+            is_primary=True,
+            is_active=True,
+        )
+
+        return Response(
+            {
+                "message": (
+                    "User registered successfully"
+                ),
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": primary_email.email,
+                },
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 class CurrentUserView(APIView):
     permission_classes = [IsAuthenticated]

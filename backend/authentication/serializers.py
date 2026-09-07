@@ -1,199 +1,116 @@
-from django.core.cache import cache
-from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.contrib.auth.hashers import check_password
-from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+
 from authorization.services.resolver import get_effective_permissions
+from rest_framework import serializers
+from users.services.password_service import validate_new_password
 
-from rest_framework import serializers 
-
-from .services import (OTP_MAX_ATTEMPTS, OTP_EXPIRATION_TIME, get_password_reset_cache_key)
 
 User = get_user_model()
 
+
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField(required=True)
-    password = serializers.CharField(required=True, write_only=True)
+    username = serializers.CharField(
+        required=True,
+    )
+    password = serializers.CharField(
+        required=True,
+        write_only=True,
+    )
+
 
 class PasswordResetRequestSerializer(
     serializers.Serializer
 ):
-    username = serializers.CharField()
     email = serializers.EmailField()
 
-    def validate(self, attrs):
-        username = (
-            attrs["username"].strip()
-        )
-
-        email = (
-            attrs["email"]
-            .strip()
-            .lower()
-        )
-
-        user = User.objects.filter(
-            username=username,
-            email__iexact=email,
-            is_active=True,
-        ).first()
-
-        attrs["username"] = username
-        attrs["email"] = email
-        attrs["user"] = user
-
-        return attrs
 
 class PasswordResetConfirmSerializer(
     serializers.Serializer
 ):
-    username = serializers.CharField()
-
-    email = serializers.EmailField()
-
-    code = serializers.RegexField(
-        regex=r"^\d{6}$",
-    )
+    uid = serializers.CharField()
+    token = serializers.CharField()
 
     new_password = serializers.CharField(
         write_only=True,
     )
 
+    new_password_confirm = serializers.CharField(
+        write_only=True,
+    )
+
     def validate(self, attrs):
-        username = (
-            attrs["username"].strip()
-        )
+        uid = attrs["uid"]
+        token = attrs["token"]
 
-        email = (
-            attrs["email"]
-            .strip()
-            .lower()
-        )
+        new_password = attrs[
+            "new_password"
+        ]
 
-        code = attrs["code"]
-
-        new_password = (
-            attrs["new_password"]
-        )
-
-        user = User.objects.filter(
-            username=username,
-            email__iexact=email,
-            is_active=True,
-        ).first()
-
-        if user is None:
-            raise serializers.ValidationError(
-                "Invalid or expired "
-                "password reset code."
-            )
-
-        cache_key = (
-            get_password_reset_cache_key(
-                user.id,
-            )
-        )
-
-        reset_data = cache.get(
-            cache_key,
-        )
-
-        if not reset_data:
-            raise serializers.ValidationError(
-                "Invalid or expired "
-                "password reset code."
-            )
+        new_password_confirm = attrs[
+            "new_password_confirm"
+        ]
 
         if (
-            str(
-                reset_data.get(
-                    "user_id",
-                )
-            )
-            != str(user.id)
+            new_password
+            != new_password_confirm
         ):
-            cache.delete(cache_key)
-
             raise serializers.ValidationError(
-                "Invalid or expired "
-                "password reset code."
-            )
-
-        if (
-            reset_data["attempts"]
-            >= OTP_MAX_ATTEMPTS
-        ):
-            cache.delete(cache_key)
-
-            raise serializers.ValidationError(
-                "Maximum attempts exceeded. "
-                "Please request a new "
-                "password reset code."
-            )
-
-        expires_at = reset_data.get(
-            "expires_at",
-        )
-
-        if expires_at is None:
-            cache.delete(cache_key)
-
-            raise serializers.ValidationError(
-                "Invalid or expired "
-                "password reset code."
-            )
-
-        remaining_time = int(
-            expires_at
-            - timezone.now().timestamp()
-        )
-
-        if remaining_time <= 0:
-            cache.delete(cache_key)
-
-            raise serializers.ValidationError(
-                "Invalid or expired "
-                "password reset code."
-            )
-
-        if not check_password(
-            code,
-            reset_data["code_hash"],
-        ):
-            reset_data["attempts"] += 1
-
-            if (
-                reset_data["attempts"]
-                >= OTP_MAX_ATTEMPTS
-            ):
-                cache.delete(cache_key)
-            else:
-                cache.set(
-                    cache_key,
-                    reset_data,
-                    timeout=remaining_time,
-                )
-
-            raise serializers.ValidationError(
-                "Invalid password reset code."
+                {
+                    "new_password_confirm": (
+                        "Passwords do not match."
+                    )
+                }
             )
 
         try:
-            validate_password(
-                new_password,
-                user,
+            user_id = force_str(
+                urlsafe_base64_decode(uid)
+            )
+
+            user = User.objects.get(
+                pk=user_id,
+                is_active=True,
+            )
+
+        except (
+            TypeError,
+            ValueError,
+            OverflowError,
+            User.DoesNotExist,
+        ):
+            raise serializers.ValidationError(
+                "Invalid or expired "
+                "password reset link."
+            )
+
+        if not default_token_generator.check_token(
+            user,
+            token,
+        ):
+            raise serializers.ValidationError(
+                "Invalid or expired "
+                "password reset link."
+            )
+
+        try:
+            validate_new_password(
+                user=user,
+                new_password=new_password,
             )
         except DjangoValidationError as error:
             raise serializers.ValidationError(
                 {
-                    "new_password":
-                        list(error.messages),
+                    "new_password": list(
+                        error.messages
+                    ),
                 }
-            )
+            ) from error
 
         attrs["user"] = user
-        attrs["cache_key"] = cache_key
 
         return attrs
 
@@ -216,20 +133,39 @@ class PasswordResetConfirmSerializer(
             update_fields=["password"],
         )
 
-        cache.delete(
-            self.validated_data[
-                "cache_key"
-            ]
-        )
-
         return user
 
-class CurrentUserSerializer(serializers.ModelSerializer):
+
+class CurrentUserSerializer(
+    serializers.ModelSerializer
+):
+    email = serializers.SerializerMethodField()
     permissions = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ("id","username","email","is_superuser","permissions",)
+        fields = (
+            "id",
+            "username",
+            "email",
+            "is_superuser",
+            "permissions",
+        )
+
+    def get_email(self, obj):
+        email_record = (
+            obj.emails
+            .filter(
+                is_primary=True,
+                is_active=True,
+            )
+            .first()
+        )
+
+        if email_record is None:
+            return None
+
+        return email_record.email
 
     def get_permissions(self, obj):
         return get_effective_permissions(obj)

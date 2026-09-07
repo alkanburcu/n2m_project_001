@@ -1,18 +1,14 @@
-from unittest.mock import patch
+import re
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.hashers import make_password
 from django.core import mail
-from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
 
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from authentication.services import (
-    get_password_reset_cache_key,
-)
+from users.models import UserEmail
 
 
 User = get_user_model()
@@ -23,31 +19,53 @@ User = get_user_model()
         "django.core.mail.backends."
         "locmem.EmailBackend"
     ),
-    CACHES={
-        "default": {
-            "BACKEND": (
-                "django.core.cache.backends."
-                "locmem.LocMemCache"
-            ),
-        },
-    },
+    FRONTEND_BASE_URL="http://localhost:5173",
 )
 class PasswordResetTests(APITestCase):
 
     def setUp(self):
-        cache.clear()
         mail.outbox.clear()
+
+        self.old_password = (
+            "OldStrongPassword123!"
+        )
+
+        self.new_password = (
+            "NewStrongPassword456!"
+        )
 
         self.user = User.objects.create_user(
             username="reset_user",
             email="reset_user@test.com",
-            password="OldStrongPassword123!",
+            password=self.old_password,
         )
 
-        self.other_user = User.objects.create_user(
-            username="other_user",
-            email="other_user@test.com",
-            password="OtherStrongPassword123!",
+        self.user_email = (
+            UserEmail.objects.create(
+                user=self.user,
+                email="reset_user@test.com",
+                is_primary=True,
+                is_active=True,
+            )
+        )
+
+        self.other_user = (
+            User.objects.create_user(
+                username="other_user",
+                email="other_user@test.com",
+                password=(
+                    "OtherStrongPassword123!"
+                ),
+            )
+        )
+
+        self.other_user_email = (
+            UserEmail.objects.create(
+                user=self.other_user,
+                email="other_user@test.com",
+                is_primary=True,
+                is_active=True,
+            )
         )
 
         self.request_url = reverse(
@@ -58,40 +76,51 @@ class PasswordResetTests(APITestCase):
             "password-reset-confirm",
         )
 
-    def tearDown(self):
-        cache.clear()
-
-    def request_reset_code(
+    def request_reset_link(
         self,
-        code=123456,
-        username=None,
         email=None,
     ):
-        with patch(
-            "authentication.services."
-            "secrets.randbelow",
-            return_value=code,
-        ):
-            return self.client.post(
-                self.request_url,
-                {
-                    "username": (
-                        username
-                        or self.user.username
-                    ),
-                    "email": (
-                        email
-                        or self.user.email
-                    ),
-                },
-                format="json",
-            )
+        return self.client.post(
+            self.request_url,
+            {
+                "email": (
+                    email
+                    or self.user_email.email
+                ),
+            },
+            format="json",
+        )
+
+    def get_reset_credentials(self):
+        self.assertEqual(
+            len(mail.outbox),
+            1,
+        )
+
+        body = mail.outbox[0].body
+
+        match = re.search(
+            (
+                r"/reset-password/"
+                r"([^/\s]+)/([^/\s]+)"
+            ),
+            body,
+        )
+
+        self.assertIsNotNone(
+            match,
+        )
+
+        uid = match.group(1)
+        token = match.group(2)
+
+        return uid, token
 
     def test_password_reset_request_success(
         self,
     ):
         response = (
-            self.request_reset_code()
+            self.request_reset_link()
         )
 
         self.assertEqual(
@@ -104,31 +133,141 @@ class PasswordResetTests(APITestCase):
             1,
         )
 
+        self.assertEqual(
+            mail.outbox[0].to,
+            [self.user_email.email],
+        )
+
         self.assertIn(
-            "123456",
+            "/reset-password/",
             mail.outbox[0].body,
         )
 
-        self.assertEqual(
-            mail.outbox[0].to,
-            [self.user.email],
-        )
-
-    def test_valid_code_changes_password(
+    def test_unknown_email_returns_generic_success(
         self,
     ):
-        self.request_reset_code()
+        response = (
+            self.request_reset_link(
+                email=(
+                    "unknown@test.com"
+                ),
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(mail.outbox),
+            0,
+        )
+
+    def test_invalid_email_format_is_rejected(
+        self,
+    ):
+        response = (
+            self.request_reset_link(
+                email="invalid-email",
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "email",
+            response.data,
+        )
+
+    def test_inactive_user_does_not_receive_email(
+        self,
+    ):
+        self.user.is_active = False
+
+        self.user.save(
+            update_fields=["is_active"],
+        )
+
+        response = (
+            self.request_reset_link()
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(mail.outbox),
+            0,
+        )
+
+    def test_inactive_email_does_not_receive_email(
+        self,
+    ):
+        self.user_email.is_active = False
+
+        self.user_email.save(
+            update_fields=["is_active"],
+        )
+
+        response = (
+            self.request_reset_link()
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(mail.outbox),
+            0,
+        )
+
+    def test_email_lookup_is_case_insensitive(
+        self,
+    ):
+        response = (
+            self.request_reset_link(
+                email=(
+                    "RESET_USER@TEST.COM"
+                ),
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            len(mail.outbox),
+            1,
+        )
+
+    def test_valid_link_changes_password(
+        self,
+    ):
+        self.request_reset_link()
+
+        uid, token = (
+            self.get_reset_credentials()
+        )
 
         response = self.client.post(
             self.confirm_url,
             {
-                "username":
-                    self.user.username,
-                "email":
-                    self.user.email,
-                "code": "123456",
+                "uid": uid,
+                "token": token,
                 "new_password":
-                    "NewStrongPassword123!",
+                    self.new_password,
+                "new_password_confirm":
+                    self.new_password,
             },
             format="json",
         )
@@ -140,33 +279,36 @@ class PasswordResetTests(APITestCase):
 
         self.user.refresh_from_db()
 
-        self.assertTrue(
-            self.user.check_password(
-                "NewStrongPassword123!",
-            )
-        )
-
         self.assertFalse(
             self.user.check_password(
-                "OldStrongPassword123!",
+                self.old_password,
             )
         )
 
-    def test_invalid_code_is_rejected(
+        self.assertTrue(
+            self.user.check_password(
+                self.new_password,
+            )
+        )
+
+    def test_invalid_token_is_rejected(
         self,
     ):
-        self.request_reset_code()
+        self.request_reset_link()
+
+        uid, _ = (
+            self.get_reset_credentials()
+        )
 
         response = self.client.post(
             self.confirm_url,
             {
-                "username":
-                    self.user.username,
-                "email":
-                    self.user.email,
-                "code": "999999",
+                "uid": uid,
+                "token": "invalid-token",
                 "new_password":
-                    "NewStrongPassword123!",
+                    self.new_password,
+                "new_password_confirm":
+                    self.new_password,
             },
             format="json",
         )
@@ -180,31 +322,30 @@ class PasswordResetTests(APITestCase):
 
         self.assertTrue(
             self.user.check_password(
-                "OldStrongPassword123!",
+                self.old_password,
             )
         )
 
-    def test_code_can_only_be_used_once(
+    def test_reset_link_cannot_be_reused(
         self,
     ):
-        self.request_reset_code()
+        self.request_reset_link()
 
-        payload = {
-            "username":
-                self.user.username,
-            "email":
-                self.user.email,
-            "code": "123456",
-            "new_password":
-                "NewStrongPassword123!",
-        }
+        uid, token = (
+            self.get_reset_credentials()
+        )
 
-        first_response = (
-            self.client.post(
-                self.confirm_url,
-                payload,
-                format="json",
-            )
+        first_response = self.client.post(
+            self.confirm_url,
+            {
+                "uid": uid,
+                "token": token,
+                "new_password":
+                    self.new_password,
+                "new_password_confirm":
+                    self.new_password,
+            },
+            format="json",
         )
 
         self.assertEqual(
@@ -212,14 +353,19 @@ class PasswordResetTests(APITestCase):
             status.HTTP_200_OK,
         )
 
-        payload["new_password"] = (
-            "AnotherStrongPassword123!"
-        )
-
         second_response = (
             self.client.post(
                 self.confirm_url,
-                payload,
+                {
+                    "uid": uid,
+                    "token": token,
+                    "new_password": (
+                        "AnotherStrongPassword789!"
+                    ),
+                    "new_password_confirm": (
+                        "AnotherStrongPassword789!"
+                    ),
+                },
                 format="json",
             )
         )
@@ -229,20 +375,24 @@ class PasswordResetTests(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
-    def test_weak_new_password_is_rejected(
+    def test_current_password_cannot_be_reused(
         self,
     ):
-        self.request_reset_code()
+        self.request_reset_link()
+
+        uid, token = (
+            self.get_reset_credentials()
+        )
 
         response = self.client.post(
             self.confirm_url,
             {
-                "username":
-                    self.user.username,
-                "email":
-                    self.user.email,
-                "code": "123456",
-                "new_password": "123",
+                "uid": uid,
+                "token": token,
+                "new_password":
+                    self.old_password,
+                "new_password_confirm":
+                    self.old_password,
             },
             format="json",
         )
@@ -261,25 +411,29 @@ class PasswordResetTests(APITestCase):
 
         self.assertTrue(
             self.user.check_password(
-                "OldStrongPassword123!",
+                self.old_password,
             )
         )
 
-    def test_invalid_code_format_is_rejected(
+    def test_password_confirmation_must_match(
         self,
     ):
-        self.request_reset_code()
+        self.request_reset_link()
+
+        uid, token = (
+            self.get_reset_credentials()
+        )
 
         response = self.client.post(
             self.confirm_url,
             {
-                "username":
-                    self.user.username,
-                "email":
-                    self.user.email,
-                "code": "12345",
+                "uid": uid,
+                "token": token,
                 "new_password":
-                    "NewStrongPassword123!",
+                    self.new_password,
+                "new_password_confirm": (
+                    "DifferentPassword789!"
+                ),
             },
             format="json",
         )
@@ -290,40 +444,35 @@ class PasswordResetTests(APITestCase):
         )
 
         self.assertIn(
-            "code",
+            "new_password_confirm",
             response.data,
         )
 
-    def test_maximum_attempts_invalidates_code(
+        self.user.refresh_from_db()
+
+        self.assertTrue(
+            self.user.check_password(
+                self.old_password,
+            )
+        )
+
+    def test_weak_new_password_is_rejected(
         self,
     ):
-        self.request_reset_code()
+        self.request_reset_link()
 
-        for _ in range(5):
-            self.client.post(
-                self.confirm_url,
-                {
-                    "username":
-                        self.user.username,
-                    "email":
-                        self.user.email,
-                    "code": "999999",
-                    "new_password":
-                        "NewStrongPassword123!",
-                },
-                format="json",
-            )
+        uid, token = (
+            self.get_reset_credentials()
+        )
 
         response = self.client.post(
             self.confirm_url,
             {
-                "username":
-                    self.user.username,
-                "email":
-                    self.user.email,
-                "code": "123456",
-                "new_password":
-                    "NewStrongPassword123!",
+                "uid": uid,
+                "token": token,
+                "new_password": "123",
+                "new_password_confirm":
+                    "123",
             },
             format="json",
         )
@@ -333,36 +482,32 @@ class PasswordResetTests(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
+        self.assertIn(
+            "new_password",
+            response.data,
+        )
+
         self.user.refresh_from_db()
 
         self.assertTrue(
             self.user.check_password(
-                "OldStrongPassword123!",
+                self.old_password,
             )
         )
-
-    def test_resend_cooldown_does_not_send_second_email(
+    def test_password_reset_uses_user_email_not_legacy_user_email(
         self,
     ):
-        first_response = (
-            self.request_reset_code(
-                code=123456,
-            )
+        self.user.email = "legacy@test.com"
+        self.user.save(
+            update_fields=["email"],
         )
 
-        second_response = (
-            self.request_reset_code(
-                code=654321,
-            )
+        response = self.request_reset_link(
+            email=self.user_email.email,
         )
 
         self.assertEqual(
-            first_response.status_code,
-            status.HTTP_200_OK,
-        )
-
-        self.assertEqual(
-            second_response.status_code,
+            response.status_code,
             status.HTTP_200_OK,
         )
 
@@ -371,121 +516,69 @@ class PasswordResetTests(APITestCase):
             1,
         )
 
-    def test_expired_or_missing_code_is_rejected(
+        self.assertEqual(
+            mail.outbox[0].to,
+            [self.user_email.email],
+        )
+
+    def test_legacy_user_email_cannot_trigger_password_reset(
         self,
     ):
-        cache_key = (
-            get_password_reset_cache_key(
-                self.user.id,
-            )
+        self.user.email = "legacy@test.com"
+        self.user.save(
+            update_fields=["email"],
         )
 
-        cache.set(
-            cache_key,
-            {
-                "user_id":
-                    str(self.user.id),
-                "code_hash":
-                    make_password(
-                        "123456",
-                    ),
-                "attempts": 0,
-                "expires_at": 0,
-            },
-            timeout=0,
-        )
-
-        response = self.client.post(
-            self.confirm_url,
-            {
-                "username":
-                    self.user.username,
-                "email":
-                    self.user.email,
-                "code": "123456",
-                "new_password":
-                    "NewStrongPassword123!",
-            },
-            format="json",
+        response = self.request_reset_link(
+            email="legacy@test.com",
         )
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-
-    def test_unknown_account_is_rejected(
-    self,
-):
-        response = self.client.post(
-            self.request_url,
-            {
-                "username": "does_not_exist",
-                "email": "nobody@test.com",
-            },
-            format="json",
-        )
-
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_200_OK,
         )
 
         self.assertEqual(
             len(mail.outbox),
             0,
         )
-
-    def test_mismatched_username_and_email_does_not_send_code(
+    def test_password_reset_email_contains_html_button(
     self,
-):
-        response = self.request_reset_code(
-            username=self.user.username,
-            email=self.other_user.email,
-        )
+    ):
+        response = self.request_reset_link()
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_200_OK,
         )
 
         self.assertEqual(
             len(mail.outbox),
-            0,
+            1,
         )
+
+        email_message = mail.outbox[0]
 
         self.assertEqual(
-            response.data["error"],
-            "The username or email is incorrect.",
-        )
-    def test_code_cannot_be_used_for_another_account(
-        self,
-    ):
-        self.request_reset_code()
-
-        response = self.client.post(
-            self.confirm_url,
-            {
-                "username":
-                    self.other_user.username,
-                "email":
-                    self.other_user.email,
-                "code": "123456",
-                "new_password":
-                    "HijackedPassword123!",
-            },
-            format="json",
+            len(email_message.alternatives),
+            1,
         )
 
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_400_BAD_REQUEST,
+        html_content = (
+            email_message.alternatives[0].content
         )
 
-        self.other_user.refresh_from_db()
+        self.assertIn(
+            "Reset Password",
+            html_content,
+        )
 
-        self.assertTrue(
-            self.other_user.check_password(
-                "OtherStrongPassword123!",
-            )
+        self.assertIn(
+            "http://localhost:5173/reset-password/",
+            html_content,
+        )
+
+        self.assertIn(
+            'href="http://localhost:5173/reset-password/',
+            html_content,
         )
