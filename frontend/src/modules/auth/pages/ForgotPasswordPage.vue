@@ -485,5 +485,6 @@ const requestPasswordReset = async () => {
   .reset-heading h1 {
     font-size: 24px;
   }
+  
 }
 </style>
