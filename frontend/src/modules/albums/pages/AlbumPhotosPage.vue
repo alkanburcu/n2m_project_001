@@ -18,6 +18,7 @@ import {
   IconTrash,
   IconUpload,
   IconX,
+  IconDownload
 } from '@tabler/icons-vue'
 
 import { useAuthStore } from '@/modules/auth/store/authStore'
@@ -34,7 +35,7 @@ const album = ref(null)
 const photos = ref([])
 
 const isLoading = ref(false)
-const errorMessage = ref('')
+const errorMessage = ref('') 
 
 const canManageProfilePhotos = computed(() => {
   if (
@@ -75,10 +76,61 @@ const editFileInput = ref(null)
 const updatingPhotoIds = ref([])
 const deletingPhotoIds = ref([])
 
+const downloadPhoto = async (photo) => {
+  try {
+    const response = await fetch(
+      photo.image,
+    )
+
+    if (!response.ok) {
+      throw new Error(
+        'Image download failed.',
+      )
+    }
+
+    const blob = await response.blob()
+
+    const downloadUrl =
+      URL.createObjectURL(blob)
+
+    const extension =
+      blob.type.split('/')[1]
+      || 'jpg'
+
+    const fileName =
+      `${photo.title || 'photo'}.${extension}`
+
+    const link =
+      document.createElement('a')
+
+    link.href = downloadUrl
+    link.download = fileName
+
+    document.body.appendChild(link)
+
+    link.click()
+    link.remove()
+
+    URL.revokeObjectURL(
+      downloadUrl,
+    )
+  } catch (error) {
+    console.error(
+      'Failed to download photo:',
+      error,
+    )
+
+    errorMessage.value =
+      'Photo could not be downloaded.'
+  }
+}
+
 const selectedPhoto = ref(null)
+
 const openPhoto = (photo) => {
   selectedPhoto.value = photo
 }
+
 const closePhoto = () => {
   selectedPhoto.value = null
 }
@@ -941,6 +993,20 @@ onBeforeUnmount(() => {
                 "
               >
                 <IconPencil
+                  :size="17"
+                  :stroke-width="1.8"
+                />
+              </button>
+
+              <button
+                type="button"
+                class="overlay-button"
+                aria-label="Download photo"
+                @click.stop="
+                  downloadPhoto(photo)
+                "
+              >
+                <IconDownload
                   :size="17"
                   :stroke-width="1.8"
                 />

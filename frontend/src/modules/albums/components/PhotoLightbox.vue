@@ -2,6 +2,7 @@
 import {
   onBeforeUnmount,
   onMounted,
+  ref,
 } from 'vue'
 
 import {
@@ -18,6 +19,13 @@ defineProps({
 const emit = defineEmits([
   'close',
 ])
+
+const isZoomed = ref(false)
+
+const toggleZoom = () => {
+  isZoomed.value =
+    !isZoomed.value
+}
 
 const close = () => {
   emit('close')
@@ -77,6 +85,13 @@ onBeforeUnmount(() => {
             || 'Album photo'
           "
           class="lightbox__image"
+          :class="{
+            'lightbox__image--zoomed':
+              isZoomed,
+          }"
+          @dblclick="
+            toggleZoom
+          "
         />
 
         <p
@@ -126,6 +141,7 @@ onBeforeUnmount(() => {
 }
 
 .lightbox__image {
+  transform-origin: center center;
   display: block;
 
   max-width: 90vw;
@@ -141,6 +157,17 @@ onBeforeUnmount(() => {
   box-shadow:
     0 20px 60px
     rgba(0, 0, 0, 0.35);
+
+  cursor: zoom-in;
+
+  transition:
+    transform 0.2s ease;
+}
+
+.lightbox__image--zoomed {
+  transform: scale(1.7);
+
+  cursor: zoom-out;
 }
 
 .lightbox__title {
