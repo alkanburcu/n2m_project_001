@@ -24,6 +24,8 @@ import { useAuthStore } from '@/modules/auth/store/authStore'
 
 import albumService from '../services/albumService'
 
+import PhotoLightbox from '../components/PhotoLightbox.vue'
+
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -72,6 +74,14 @@ const editFileInput = ref(null)
 
 const updatingPhotoIds = ref([])
 const deletingPhotoIds = ref([])
+
+const selectedPhoto = ref(null)
+const openPhoto = (photo) => {
+  selectedPhoto.value = photo
+}
+const closePhoto = () => {
+  selectedPhoto.value = null
+}
 
 const revokePreview = (
   previewUrl,
@@ -889,8 +899,20 @@ onBeforeUnmount(() => {
             class="
               photo-card__image-wrapper
             "
+            role="button"
+            tabindex="0"
+            :aria-label="
+              `Open ${photo.title || 'photo'}`
+            "
+            @click="openPhoto(photo)"
+            @keydown.enter="
+              openPhoto(photo)
+            "
+            @keydown.space.prevent="
+              openPhoto(photo)
+            "
           >
-            <img
+              <img
               :src="photo.image"
               :alt="photo.title"
               class="
@@ -914,7 +936,7 @@ onBeforeUnmount(() => {
                 type="button"
                 class="overlay-button"
                 aria-label="Edit photo"
-                @click="
+                @click.stop="
                   startEditing(photo)
                 "
               >
@@ -942,7 +964,7 @@ onBeforeUnmount(() => {
                 aria-label="
                   Delete photo
                 "
-                @click="
+                @click.stop="
                   deletePhoto(photo.id)
                 "
               >
@@ -963,6 +985,11 @@ onBeforeUnmount(() => {
           </div>
         </template>
       </article>
+      <PhotoLightbox
+        v-if="selectedPhoto"
+        :photo="selectedPhoto"
+        @close="closePhoto"
+      />
     </div>
   </section>
 </template>
@@ -1237,6 +1264,8 @@ onBeforeUnmount(() => {
   overflow: hidden;
 
   background: #f6f6f8;
+
+  cursor: zoom-in;
 }
 
 .photo-card__image {
@@ -1246,6 +1275,14 @@ onBeforeUnmount(() => {
   display: block;
 
   object-fit: cover;
+}
+
+.photo-card__image-wrapper:focus-visible {
+  outline:
+    2px solid
+    var(--color-primary);
+
+  outline-offset: -2px;
 }
 
 .photo-card__overlay {
