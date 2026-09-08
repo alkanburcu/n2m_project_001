@@ -1,7 +1,10 @@
 import api from '@/services/api'
 
+const PHOTO_URL = '/photos/'
+const ALBUM_URL = '/albums/'
+
 const getAlbumsByUser = (userId) => {
-  return api.get('/albums/', {
+  return api.get(ALBUM_URL, {
     params: {
       user: userId,
     },
@@ -9,23 +12,23 @@ const getAlbumsByUser = (userId) => {
 }
 
 const getAlbumById = (id) => {
-  return api.get(`/albums/${id}/`)
+  return api.get(`${ALBUM_URL}${id}/`)
 }
 
 const createAlbum = (data) => {
-  return api.post('/albums/', data)
+  return api.post(ALBUM_URL, data)
 }
 
 const updateAlbum = (id, data) => {
-  return api.patch(`/albums/${id}/`, data)
+  return api.patch(`${ALBUM_URL}${id}/`, data)
 }
 
 const deleteAlbum = (id) => {
-  return api.delete(`/albums/${id}/`)
+  return api.delete(`${ALBUM_URL}${id}/`)
 }
 
 const getPhotosByAlbum = (albumId) => {
-  return api.get('/photos/', {
+  return api.get(PHOTO_URL, {
     params: {
       album: albumId,
     },
@@ -39,7 +42,7 @@ const createPhoto = (data) => {
   formData.append('title', data.title)
   formData.append('image', data.image)
 
-  return api.post('/photos/', formData)
+  return api.post(PHOTO_URL, formData)
 }
 
 const updatePhoto = (id, data) => {
@@ -54,13 +57,13 @@ const updatePhoto = (id, data) => {
   }
 
   return api.patch(
-    `/photos/${id}/`,
+    `${PHOTO_URL}${id}/`,
     formData,
   )
 }
 
 const deletePhoto = (id) => {
-  return api.delete(`/photos/${id}/`)
+  return api.delete(`${PHOTO_URL}${id}/`)
 }
 
 export default {

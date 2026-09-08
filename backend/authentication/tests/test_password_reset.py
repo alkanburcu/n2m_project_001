@@ -2,6 +2,7 @@ import re
 
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
 
@@ -10,9 +11,7 @@ from rest_framework.test import APITestCase
 
 from users.models import UserEmail
 
-
 User = get_user_model()
-
 
 @override_settings(
     EMAIL_BACKEND=(
@@ -25,6 +24,7 @@ class PasswordResetTests(APITestCase):
 
     def setUp(self):
         mail.outbox.clear()
+        cache.clear()
 
         self.old_password = (
             "OldStrongPassword123!"
@@ -75,6 +75,9 @@ class PasswordResetTests(APITestCase):
         self.confirm_url = reverse(
             "password-reset-confirm",
         )
+        self.redeem_url = reverse(
+            "password-reset-redeem",
+        )
 
     def request_reset_link(
         self,
@@ -115,6 +118,20 @@ class PasswordResetTests(APITestCase):
         token = match.group(2)
 
         return uid, token
+
+    def redeem_reset_link(
+        self,
+        uid,
+        token,
+    ):
+        return self.client.post(
+            self.redeem_url,
+            {
+                "uid": uid,
+                "token": token,
+            },
+            format="json",
+        )
 
     def test_password_reset_request_success(
         self,
@@ -259,11 +276,33 @@ class PasswordResetTests(APITestCase):
             self.get_reset_credentials()
         )
 
+        redeem_response = (
+            self.redeem_reset_link(
+                uid,
+                token,
+            )
+        )
+
+        self.assertEqual(
+            redeem_response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertIn(
+            "reset_token",
+            redeem_response.data,
+        )
+
+        reset_token = (
+            redeem_response.data[
+                "reset_token"
+            ]
+        )
+
         response = self.client.post(
             self.confirm_url,
             {
-                "uid": uid,
-                "token": token,
+                "reset_token": reset_token,
                 "new_password":
                     self.new_password,
                 "new_password_confirm":
@@ -275,6 +314,7 @@ class PasswordResetTests(APITestCase):
         self.assertEqual(
             response.status_code,
             status.HTTP_200_OK,
+            response.data,
         )
 
         self.user.refresh_from_db()
@@ -300,17 +340,11 @@ class PasswordResetTests(APITestCase):
             self.get_reset_credentials()
         )
 
-        response = self.client.post(
-            self.confirm_url,
-            {
-                "uid": uid,
-                "token": "invalid-token",
-                "new_password":
-                    self.new_password,
-                "new_password_confirm":
-                    self.new_password,
-            },
-            format="json",
+        response = (
+            self.redeem_reset_link(
+                uid,
+                "invalid-token",
+            )
         )
 
         self.assertEqual(
@@ -335,11 +369,56 @@ class PasswordResetTests(APITestCase):
             self.get_reset_credentials()
         )
 
+        first_response = (
+            self.redeem_reset_link(
+                uid,
+                token,
+            )
+        )
+
+        self.assertEqual(
+            first_response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        second_response = (
+            self.redeem_reset_link(
+                uid,
+                token,
+            )
+        )
+
+        self.assertEqual(
+            second_response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+    def test_reset_session_cannot_be_reused(
+        self,
+    ):
+        self.request_reset_link()
+
+        uid, token = (
+            self.get_reset_credentials()
+        )
+
+        redeem_response = (
+            self.redeem_reset_link(
+                uid,
+                token,
+            )
+        )
+
+        reset_token = (
+            redeem_response.data[
+                "reset_token"
+            ]
+        )
+
         first_response = self.client.post(
             self.confirm_url,
             {
-                "uid": uid,
-                "token": token,
+                "reset_token": reset_token,
                 "new_password":
                     self.new_password,
                 "new_password_confirm":
@@ -353,26 +432,136 @@ class PasswordResetTests(APITestCase):
             status.HTTP_200_OK,
         )
 
-        second_response = (
-            self.client.post(
-                self.confirm_url,
-                {
-                    "uid": uid,
-                    "token": token,
-                    "new_password": (
-                        "AnotherStrongPassword789!"
-                    ),
-                    "new_password_confirm": (
-                        "AnotherStrongPassword789!"
-                    ),
-                },
-                format="json",
-            )
+        second_response = self.client.post(
+            self.confirm_url,
+            {
+                "reset_token": reset_token,
+                "new_password": (
+                    "AnotherStrongPassword789!"
+                ),
+                "new_password_confirm": (
+                    "AnotherStrongPassword789!"
+                ),
+            },
+            format="json",
         )
 
         self.assertEqual(
             second_response.status_code,
             status.HTTP_400_BAD_REQUEST,
+        )
+
+    @override_settings( PASSWORD_RESET_SESSION_TIMEOUT=0,)
+
+    def test_expired_reset_session_is_rejected(
+        self,
+    ):
+        self.request_reset_link()
+
+        uid, token = (
+            self.get_reset_credentials()
+        )
+
+        redeem_response = (
+            self.redeem_reset_link(
+                uid,
+                token,
+            )
+        )
+
+        self.assertEqual(
+            redeem_response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        reset_token = (
+            redeem_response.data[
+                "reset_token"
+            ]
+        )
+
+        response = self.client.post(
+            self.confirm_url,
+            {
+                "reset_token": reset_token,
+                "new_password":
+                    self.new_password,
+                "new_password_confirm":
+                    self.new_password,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.user.refresh_from_db()
+
+        self.assertTrue(
+            self.user.check_password(
+                self.old_password,
+            )
+        )
+
+    def test_password_change_invalidates_reset_session(
+        self,
+    ):
+        self.request_reset_link()
+
+        uid, token = (
+            self.get_reset_credentials()
+        )
+
+        redeem_response = (
+            self.redeem_reset_link(
+                uid,
+                token,
+            )
+        )
+
+        reset_token = (
+            redeem_response.data[
+                "reset_token"
+            ]
+        )
+
+        externally_changed_password = (
+            "ExternalPasswordChange789!"
+        )
+
+        self.user.set_password(
+            externally_changed_password,
+        )
+
+        self.user.save(
+            update_fields=["password"],
+        )
+
+        response = self.client.post(
+            self.confirm_url,
+            {
+                "reset_token": reset_token,
+                "new_password":
+                    self.new_password,
+                "new_password_confirm":
+                    self.new_password,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.user.refresh_from_db()
+
+        self.assertTrue(
+            self.user.check_password(
+                externally_changed_password,
+            )
         )
 
     def test_current_password_cannot_be_reused(
@@ -384,11 +573,28 @@ class PasswordResetTests(APITestCase):
             self.get_reset_credentials()
         )
 
+        redeem_response = (
+            self.redeem_reset_link(
+                uid,
+                token,
+            )
+        )
+
+        self.assertEqual(
+            redeem_response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        reset_token = (
+            redeem_response.data[
+                "reset_token"
+            ]
+        )
+
         response = self.client.post(
             self.confirm_url,
             {
-                "uid": uid,
-                "token": token,
+                "reset_token": reset_token,
                 "new_password":
                     self.old_password,
                 "new_password_confirm":
@@ -424,11 +630,23 @@ class PasswordResetTests(APITestCase):
             self.get_reset_credentials()
         )
 
+        redeem_response = (
+            self.redeem_reset_link(
+                uid,
+                token,
+            )
+        )
+
+        reset_token = (
+            redeem_response.data[
+                "reset_token"
+            ]
+        )
+
         response = self.client.post(
             self.confirm_url,
             {
-                "uid": uid,
-                "token": token,
+                "reset_token": reset_token,
                 "new_password":
                     self.new_password,
                 "new_password_confirm": (
@@ -465,11 +683,23 @@ class PasswordResetTests(APITestCase):
             self.get_reset_credentials()
         )
 
+        redeem_response = (
+            self.redeem_reset_link(
+                uid,
+                token,
+            )
+        )
+
+        reset_token = (
+            redeem_response.data[
+                "reset_token"
+            ]
+        )
+
         response = self.client.post(
             self.confirm_url,
             {
-                "uid": uid,
-                "token": token,
+                "reset_token": reset_token,
                 "new_password": "123",
                 "new_password_confirm":
                     "123",
@@ -494,6 +724,7 @@ class PasswordResetTests(APITestCase):
                 self.old_password,
             )
         )
+
     def test_password_reset_uses_user_email_not_legacy_user_email(
         self,
     ):

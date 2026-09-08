@@ -175,7 +175,8 @@ SIMPLE_JWT = {
 }
 
 #for password reset email
-PASSWORD_RESET_TIMEOUT = 3600  # 1 hour in seconds
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24 * 3  # 3 days in seconds
+PASSWORD_RESET_SESSION_TIMEOUT = 60 * 15 #reset password session timeout in seconds (15 minutes)
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp-relay.brevo.com'

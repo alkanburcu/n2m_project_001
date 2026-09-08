@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
@@ -9,6 +9,11 @@ import {
 } from '@tabler/icons-vue'
 
 import authService from '../services/authService'
+
+const resetToken = ref(null)
+
+const isRedeeming = ref(true)
+const isLinkValid = ref(false)
 
 const route = useRoute()
 const router = useRouter()
@@ -51,6 +56,39 @@ const getApiError = (error, fallback) => {
   return firstFieldError || fallback
 }
 
+const redeemResetLink = async () => {
+  isRedeeming.value = true
+  isLinkValid.value = false
+  errorMessage.value = ''
+
+  try {
+    const response =
+      await authService.redeemPasswordReset({
+        uid: route.params.uid,
+        token: route.params.token,
+      })
+
+    resetToken.value =
+      response.data.reset_token
+
+    isLinkValid.value = true
+  } catch (error) {
+    console.error(
+      'Password reset link redemption failed:',
+      error,
+    )
+
+    errorMessage.value = ''
+
+  } finally {
+    isRedeeming.value = false
+  }
+}
+
+onMounted(() => {
+  redeemResetLink()
+})
+
 const resetPassword = async () => {
   errorMessage.value = ''
 
@@ -78,16 +116,25 @@ const resetPassword = async () => {
     return
   }
 
+  if (
+  !isLinkValid.value
+  || !resetToken.value
+) {
+  errorMessage.value =
+    'This password reset session is invalid or has expired.'
+
+  return
+}
+
   isLoading.value = true
 
   try {
     await authService.confirmPasswordReset({
-      uid: route.params.uid,
-      token: route.params.token,
-      newPassword: newPassword.value,
-      newPasswordConfirm:
-        confirmPassword.value,
-    })
+  resetToken: resetToken.value,
+  newPassword: newPassword.value,
+  newPasswordConfirm:
+    confirmPassword.value,
+})
 
     await router.replace({
       name: 'login',
@@ -127,15 +174,36 @@ const resetPassword = async () => {
         </div>
 
         <div class="reset-heading">
-          <h1>Reset password</h1>
+          <template v-if="isRedeeming">
+            <h1>Checking link</h1>
 
-          <p>
-            Choose a new password for
-            your account.
-          </p>
+            <p>
+              Please wait while we verify
+              your password reset link.
+            </p>
+          </template>
+
+          <template v-else-if="isLinkValid">
+            <h1>Reset password</h1>
+
+            <p>
+              Choose a new password for
+              your account.
+            </p>
+          </template>
+
+          <template v-else>
+            <h1>Link expired or already used</h1>
+
+            <p>
+              This password reset link is
+              no longer valid. Please request
+              a new link to reset your password.
+            </p>
+          </template>
         </div>
-
         <form
+          v-if="isLinkValid"
           class="reset-form"
           @submit.prevent="resetPassword"
         >
@@ -257,7 +325,21 @@ const resetPassword = async () => {
             }}
           </button>
         </form>
-
+        <button
+          v-if="
+            !isRedeeming
+            && !isLinkValid
+          "
+          type="button"
+          class="primary-button"
+          @click="
+            router.push({
+              name: 'forgot-password',
+            })
+          "
+        >
+          Request a new reset link
+        </button>
         <button
           type="button"
           class="back-to-login"
@@ -501,7 +583,8 @@ const resetPassword = async () => {
 
 .primary-button {
   min-height: 49px;
-
+  
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -563,6 +646,12 @@ const resetPassword = async () => {
 .back-to-login:hover {
   color: var(--brand-purple);
 }
+
+.retry-button {
+  width: fit-content;
+  margin: 0 auto;
+  padding: 0 24px;
+} 
 
 @media (max-width: 520px) {
   .reset-page {

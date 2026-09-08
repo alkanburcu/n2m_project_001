@@ -7,7 +7,12 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
-from .serializers import LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, CurrentUserSerializer
+from .serializers import ( LoginSerializer, 
+                          PasswordResetRequestSerializer, 
+                          PasswordResetConfirmSerializer, 
+                          CurrentUserSerializer, 
+                          PasswordResetRedeemSerializer,
+)
 
 from .services.email_service import (send_password_reset_link_email,)
 from .services.password_reset_service import (generate_password_reset_link,get_active_user_email,)
@@ -86,6 +91,28 @@ class PasswordResetRequestView(APIView):
             status=status.HTTP_200_OK,
         )
     
+class PasswordResetRedeemView(APIView):
+    permission_classes = []
+    authentication_classes = []
+
+    def post(self, request):
+        serializer = PasswordResetRedeemSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        reset_token = serializer.redeem()
+
+        return Response(
+            {
+                "reset_token": reset_token,
+            },
+            status=status.HTTP_200_OK,
+        )
+
 class PasswordResetConfirmView(APIView):
     permission_classes = []
     authentication_classes = []

@@ -40,17 +40,28 @@ const requestPasswordReset = ({
   )
 }
 
-const confirmPasswordReset = ({
+const redeemPasswordReset = ({
   uid,
   token,
+}) => {
+  return api.post(
+    '/auth/password-reset-redeem/',
+    {
+      uid,
+      token,
+    },
+  )
+}
+
+const confirmPasswordReset = ({
+  resetToken,
   newPassword,
   newPasswordConfirm,
 }) => {
   return api.post(
     '/auth/password-reset-confirm/',
     {
-      uid,
-      token,
+      reset_token: resetToken,
       new_password: newPassword,
       new_password_confirm:
         newPasswordConfirm,
@@ -65,4 +76,5 @@ export default {
   logout,
   requestPasswordReset,
   confirmPasswordReset,
+  redeemPasswordReset,
 }
