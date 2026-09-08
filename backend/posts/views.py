@@ -33,8 +33,6 @@ class PostViewSet(ModelViewSet):
             "user",
         ).all()
 
-        # List/retrieve davranışını şimdilik mevcut
-        # sistemdeki gibi koruyoruz.
         if (
             self.action not in {"list", "retrieve"}
             and not self.can_manage_others()
@@ -52,8 +50,8 @@ class PostViewSet(ModelViewSet):
                 user_id=user_id,
             )
 
-        return queryset
-
+        return queryset.order_by("-created_at")
+    
     def perform_create(self, serializer):
         requesting_user = self.request.user
 
