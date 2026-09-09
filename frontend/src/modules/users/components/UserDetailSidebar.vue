@@ -4,11 +4,15 @@ import {
   watch,
 } from 'vue'
 
-import { useRoute } from 'vue-router'
+import {
+  useRoute,
+  useRouter,
+} from 'vue-router'
 
 import {
   IconChecklist,
   IconFileText,
+  IconPencil,
   IconPhoto,
 } from '@tabler/icons-vue'
 
@@ -18,22 +22,36 @@ import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useUserStore } from '../store/userStore'
 
 const route = useRoute()
+const router = useRouter()
 
 const userStore = useUserStore()
 const authStore = useAuthStore()
 
-const canViewTodos = computed(() => {
-  const isOwnProfile =
+const isOwnProfile = computed(() => {
+  return (
     String(route.params.id)
     === String(authStore.user?.id)
+  )
+})
 
+const canViewTodos = computed(() => {
   return (
-    isOwnProfile
+    isOwnProfile.value
     || authStore.can(
       'todos.manage_others',
     )
   )
 })
+
+const goEditProfile = async () => {
+  if (!isOwnProfile.value) {
+    return
+  }
+
+  await router.push({
+    name: 'profile',
+  })
+}
 
 watch(
   () => route.params.id,
@@ -52,29 +70,91 @@ watch(
   <aside class="detail-sidebar">
     <div>
       <section class="detail-sidebar__profile">
-        <div class="detail-sidebar__avatar">
-          {{
-            (
-              userStore.selectedUser?.name
-              || userStore.selectedUser?.username
-              || '?'
-            )
-              .charAt(0)
-              .toUpperCase()
-          }}
-        </div>
+        <button
+          v-if="isOwnProfile"
+          type="button"
+          class="detail-sidebar__profile-button"
+          aria-label="Edit profile"
+          @click="goEditProfile"
+        >
+          <div class="detail-sidebar__avatar">
+            <img
+              v-if="userStore.selectedUser?.profile_photo"
+              :src="userStore.selectedUser.profile_photo"
+              alt=""
+              class="detail-sidebar__avatar-image"
+            >
 
-        <div>
-          <h2>
-            {{
-              userStore.selectedUser?.name
-              || userStore.selectedUser?.username
-            }}
-          </h2>
+            <span v-else>
+              {{
+                (
+                  userStore.selectedUser?.display_name
+                  || userStore.selectedUser?.username
+                  || '?'
+                )
+                  .charAt(0)
+                  .toUpperCase()
+              }}
+            </span>
+          </div>
 
-          <p>
-            {{ userStore.selectedUser?.email }}
-          </p>
+          <div class="detail-sidebar__identity">
+            <h2>
+              {{
+                userStore.selectedUser?.display_name
+                || userStore.selectedUser?.username
+              }}
+            </h2>
+
+            <p>
+              {{ userStore.selectedUser?.email }}
+            </p>
+          </div>
+
+          <IconPencil
+            :size="15"
+            :stroke-width="1.8"
+            class="detail-sidebar__edit-icon"
+          />
+        </button>
+
+        <div
+          v-else
+          class="detail-sidebar__profile-content"
+        >
+          <div class="detail-sidebar__avatar">
+            <img
+              v-if="userStore.selectedUser?.profile_photo"
+              :src="userStore.selectedUser.profile_photo"
+              alt=""
+              class="detail-sidebar__avatar-image"
+            >
+
+            <span v-else>
+              {{
+                (
+                  userStore.selectedUser?.display_name
+                  || userStore.selectedUser?.username
+                  || '?'
+                )
+                  .charAt(0)
+                  .toUpperCase()
+              }}
+            </span>
+          </div>
+
+          <div class="detail-sidebar__identity">
+            <h2>
+              {{
+                userStore.selectedUser?.display_name
+                || userStore.selectedUser?.username
+              }}
+            </h2>
+
+            <p>
+              {{ userStore.selectedUser?.email }}
+            </p>
+          </div>
         </div>
       </section>
 
@@ -160,19 +240,6 @@ watch(
     1px solid var(--color-border);
 }
 
-.detail-sidebar__profile {
-  overflow: hidden;
-
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  padding: 24px 16px;
-
-  border-bottom:
-    1px solid var(--color-border);
-}
-
 .detail-sidebar__avatar {
   width: 44px;
   height: 44px;
@@ -190,34 +257,6 @@ watch(
   background: #eeeeee;
 
   border-radius: 50%;
-}
-
-.detail-sidebar__profile > div:last-child {
-  min-width: 0;
-
-  flex: 1;
-}
-
-.detail-sidebar__profile h2 {
-  margin: 0;
-
-  color: var(--color-title);
-
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.detail-sidebar__profile p {
-  overflow: hidden;
-
-  margin: 2px 0 0;
-
-  color: var(--color-subtitle);
-
-  font-size: 10px;
-
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .detail-sidebar__nav {
@@ -269,5 +308,129 @@ watch(
 
   width: 105px;
   height: auto;
+}
+
+.detail-sidebar__profile {
+  overflow: hidden;
+
+  padding: 0;
+
+  border-bottom:
+    1px solid var(--color-border);
+}
+
+.detail-sidebar__profile-button,
+.detail-sidebar__profile-content {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 24px 16px;
+}
+
+.detail-sidebar__profile-button {
+  color: inherit;
+
+  font: inherit;
+  text-align: left;
+
+  background: transparent;
+  border: 0;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.18s ease;
+}
+
+.detail-sidebar__profile-button:hover {
+  background:
+    rgba(82, 63, 158, 0.05);
+}
+
+.detail-sidebar__profile-button:focus-visible {
+  outline: none;
+
+  box-shadow:
+    inset 0 0 0 2px
+    rgba(82, 63, 158, 0.22);
+}
+
+.detail-sidebar__avatar {
+  width: 44px;
+  height: 44px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  overflow: hidden;
+
+  color: var(--color-primary);
+
+  font-size: 16px;
+  font-weight: 600;
+
+  background: #eeeeee;
+
+  border-radius: 50%;
+}
+
+.detail-sidebar__avatar-image {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.detail-sidebar__identity {
+  min-width: 0;
+  flex: 1;
+}
+
+.detail-sidebar__identity h2 {
+  overflow: hidden;
+
+  margin: 0;
+
+  color: var(--color-title);
+
+  font-size: 14px;
+  font-weight: 600;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-sidebar__identity p {
+  overflow: hidden;
+
+  margin: 2px 0 0;
+
+  color: var(--color-subtitle);
+
+  font-size: 10px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-sidebar__edit-icon {
+  flex-shrink: 0;
+
+  color: var(--color-subtitle);
+
+  opacity: 0.65;
+}
+
+.detail-sidebar__profile-button:hover
+.detail-sidebar__edit-icon {
+  color: var(--color-primary);
+  opacity: 1;
 }
 </style>

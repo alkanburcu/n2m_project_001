@@ -4,8 +4,16 @@ import todoRoutes from '@/modules/todos/routes/todoRoutes'
 
 import UserDetailLayout from '../pages/UserDetailLayout.vue'
 import UserListPage from '../pages/UserListPage.vue'
+import ProfilePage from '../pages/ProfilePage.vue'
 
 const userRoutes = [
+  {
+  path: '/profile',
+  name: 'profile',
+  component: ProfilePage,
+
+  meta: {requiresAuth: true,},
+  },
   {
     path: '/users',
     name: 'users',

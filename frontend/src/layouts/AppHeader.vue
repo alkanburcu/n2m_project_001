@@ -12,6 +12,7 @@ import {
   IconLogout,
   IconUser,
   IconUsers,
+  IconBriefcase,
 } from '@tabler/icons-vue'
 
 import { useRoute, useRouter } from 'vue-router'
@@ -60,6 +61,14 @@ const goUsers = async () => {
 
   await router.push({
     name: 'users',
+  })
+}
+
+const goEditProfile = async () => {
+  closeMenu()
+
+  await router.push({
+    name: 'profile',
   })
 }
 
@@ -164,6 +173,24 @@ onBeforeUnmount(() => {
             class="account-dropdown__item"
             @click="goMyProfile"
           >
+            <IconBriefcase
+              :size="18"
+              :stroke-width="1.8"
+            />
+
+            <span>My Workplace</span>
+          </button>
+
+          <button
+            type="button"
+            class="account-dropdown__item"
+            @click="goEditProfile"
+          >
+            <IconUserEdit
+              :size="18"
+              :stroke-width="1.8"
+            />
+            
             <IconUser
               :size="18"
               :stroke-width="1.8"

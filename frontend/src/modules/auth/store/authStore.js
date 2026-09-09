@@ -51,9 +51,32 @@ const fetchMe = async () => {
 
   return user.value
 }
+
+const syncProfile = (profileData) => {
+  if (!profileData) {
+    return
+  }
+
+  user.value = {
+    ...user.value,
+    ...profileData,
+  }
+}
  
 
-return { accessToken, refreshToken, isAuthenticated, isSuperuser, user, can, login, logout, fetchMe }
+return { 
+  accessToken,
+  refreshToken, 
+  isAuthenticated, 
+  isSuperuser, 
+  user, 
+  can, 
+  login, 
+  logout, 
+  fetchMe,
+  syncProfile,
+  
+}
 })
 
 
