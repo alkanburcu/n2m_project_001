@@ -3,6 +3,7 @@ from django.conf import settings
 from django.db.models import Q
 from django.db.models.functions import Lower
 
+from companies.models import Company
 from django.contrib.auth.models import AbstractUser
 from core.core_models import BaseModel
 
@@ -11,6 +12,21 @@ class User(AbstractUser, BaseModel):
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=15, blank=True)
     website = models.URLField(max_length=200, blank=True)
+    location = models.CharField( max_length=150,blank=True,)
+
+    profile_photo = models.ImageField(
+        upload_to="profile_photos/",
+        null=True,
+        blank=True,
+    )
+
+    company = models.ForeignKey(
+        "companies.Company",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="users",
+    )
 
     def __str__(self):
         return self.username
@@ -32,13 +48,6 @@ class geo(BaseModel):
 
     def __str__(self):
         return f"Lat: {self.lat}, Lng: {self.lng}"
-
-class Company(BaseModel):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='company')
-    name = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.name
 
 class UserEmail(BaseModel):
     user = models.ForeignKey(

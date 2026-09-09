@@ -4,9 +4,13 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 
 from .services.password_service import validate_new_password
 from .services.user_service import create_application_user
-from .models import Adress, geo, Company, UserEmail
+from .models import Adress, geo, UserEmail
 from rest_framework import serializers
 
+from companies.models import Company
+from companies.serializers import CompanySerializer
+
+from django.conf import settings
 
 User = get_user_model()
 
@@ -86,16 +90,17 @@ class AddressSerializer(serializers.ModelSerializer):
         fields = ("street","suite","city","zipcode","geo",)
 
 
-class CompanySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Company
-        fields = ("name",)
-
-
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField()
-    addresses = AddressSerializer(read_only=True)
-    company = CompanySerializer(read_only=True)
+    display_name = serializers.SerializerMethodField()
+
+    addresses = AddressSerializer(
+        read_only=True,
+    )
+
+    company = CompanySerializer(
+        read_only=True,
+    )
 
     class Meta:
         model = User
@@ -103,9 +108,14 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "username",
+            "first_name",
+            "last_name",
+            "display_name",
             "email",
             "phone_number",
             "website",
+            "location",
+            "profile_photo",
             "addresses",
             "company",
         )
@@ -124,6 +134,18 @@ class UserSerializer(serializers.ModelSerializer):
             return None
 
         return email_record.email
+
+    def get_display_name(self, obj):
+        full_name = " ".join(
+            part
+            for part in (
+                obj.first_name.strip(),
+                obj.last_name.strip(),
+            )
+            if part
+        )
+
+        return full_name or obj.username
     
 class ChangePasswordSerializer(
     serializers.Serializer
@@ -219,3 +241,81 @@ class ChangePasswordSerializer(
         )
 
         return user
+
+class UserProfileUpdateSerializer(
+    serializers.ModelSerializer
+):
+    company_id = serializers.PrimaryKeyRelatedField(
+        source="company",
+        queryset=Company.objects.filter(
+            is_active=True,
+        ),
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
+
+    profile_photo = serializers.ImageField(
+        required=False,
+        allow_null=True,
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            "first_name",
+            "last_name",
+            "location",
+            "website",
+            "profile_photo",
+            "company_id",
+        )
+
+class UserProfileUpdateSerializer(
+    serializers.ModelSerializer
+):
+    company_id = serializers.PrimaryKeyRelatedField(
+        source="company",
+        queryset=Company.objects.filter(
+            is_active=True,
+        ),
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
+
+    profile_photo = serializers.ImageField(
+        required=False,
+        allow_null=True,
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            "first_name",
+            "last_name",
+            "location",
+            "website",
+            "profile_photo",
+            "company_id",
+        )
+
+    def validate_profile_photo(self, value):
+        if value is None:
+            return value
+
+        max_size = (
+            settings.PROFILE_PHOTO_MAX_SIZE_MB
+            * 1024
+            * 1024
+        )
+
+        if value.size > max_size:
+            raise serializers.ValidationError(
+                (
+                    "Profile photo must not exceed "
+                    f"{settings.PROFILE_PHOTO_MAX_SIZE_MB} MB."
+                )
+            )
+
+        return value

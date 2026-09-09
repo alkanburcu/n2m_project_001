@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'posts',
     'albums',
     'todos',
+    'companies',
 
     "authorization",
 ]
@@ -188,7 +189,13 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 FRONTEND_PASSWORD_RESET_URL = os.getenv('FRONTEND_PASSWORD_RESET_URL',"http://localhost:5173/reset-password")
 
-
+#for profil photos
+PROFILE_PHOTO_MAX_SIZE_MB = int(
+    os.getenv(
+        "PROFILE_PHOTO_MAX_SIZE_MB",
+        "5",
+    )
+)
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173',

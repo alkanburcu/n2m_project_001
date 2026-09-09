@@ -26,7 +26,7 @@ urlpatterns = [
     path("api/", include("todos.urls")),
     path("api/", include("posts.urls")),
     path("api/", include("albums.urls")),
-
+    path("api/", include("companies.urls")),
 ]
 
 if settings.DEBUG:
