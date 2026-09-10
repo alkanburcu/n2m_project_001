@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
+from authorization.services.resolver import has_permission
 
 from .models import User
 from .serializers import (
@@ -39,14 +40,34 @@ class UserViewSet(ModelViewSet):
             "addresses__geo",
         ).all()
 
-        if self.request.user.is_superuser:
+        user = self.request.user
+
+        if user.is_superuser:
             return queryset
 
-        if self.action == "retrieve":
+        # Access itself is still controlled by HasAppPermission
+        if self.action in (
+            "list",
+            "retrieve",
+        ):
+            return queryset
+
+        # users.update allows updating // users.manage_others expands the target scope
+        if (
+            self.action
+            in (
+                "update",
+                "partial_update",
+            )
+            and has_permission(
+                user,
+                "users.manage_others",
+            )
+        ):
             return queryset
 
         return queryset.filter(
-            pk=self.request.user.pk,
+            pk=user.pk,
         )
 
     def get_serializer_class(self):
@@ -59,6 +80,11 @@ class UserViewSet(ModelViewSet):
         if (
             self.action == "me"
             and self.request.method == "PATCH"
+        ):
+            return UserProfileUpdateSerializer
+        if self.action in (
+            "update",
+            "partial_update",
         ):
             return UserProfileUpdateSerializer
 

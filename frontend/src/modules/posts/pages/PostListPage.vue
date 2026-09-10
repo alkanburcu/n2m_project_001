@@ -832,16 +832,22 @@ onBeforeUnmount(() => {
                     :key="comment.id"
                     class="comment"
                   >
-                    <div
-                      class="
-                        comment__avatar
-                      "
-                    >
-                      {{
-                        getInitial(
-                          comment.display_name,
-                        )
-                      }}
+                    <div class="comment__avatar">
+                      <img
+                        v-if="comment.profile_photo"
+                        :src="comment.profile_photo"
+                        alt=""
+                        class="comment__avatar-image"
+                      >
+
+                      <span v-else>
+                        {{
+                          getInitial(
+                            comment.display_name
+                            || comment.username,
+                          )
+                        }}
+                      </span>
                     </div>
 
                     <div
@@ -851,7 +857,7 @@ onBeforeUnmount(() => {
                     >
                       <strong>
                         {{
-                          comment.display_name
+                          comment.display_name || comment.username || 'User'
                         }}
                       </strong>
 
@@ -1378,6 +1384,7 @@ onBeforeUnmount(() => {
 }
 
 .comment__avatar {
+  overflow: hidden;
   width: 32px;
   height: 32px;
 
@@ -1394,6 +1401,15 @@ onBeforeUnmount(() => {
   background: #f0eef6;
 
   border-radius: 50%;
+}
+
+.comment__avatar-image {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
 }
 
 .comment__content {

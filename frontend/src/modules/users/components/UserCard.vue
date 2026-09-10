@@ -23,11 +23,28 @@ defineEmits(['select'])
   @keydown.enter="$emit('select', user.id)">
     <div class="user-card__profile">
       <div class="user-card__avatar">
-        {{ (user.name || user.username).charAt(0).toUpperCase() }}
+        <img
+          v-if="user.profile_photo"
+          :src="user.profile_photo"
+          alt=""
+          class="user-card__avatar-image"
+        >
+
+        <span v-else>
+          {{
+            (
+              user.display_name
+              || user.username
+              || '?'
+            )
+              .charAt(0)
+              .toUpperCase()
+          }}
+        </span>
       </div>
 
       <div class="user-card__identity">
-        <h2>{{ user.name || user.username }}</h2>
+        <h2>{{ display_name || user.username }}</h2>
         <p>{{ user.email }}</p>
 
         <span v-if="user.phone_number">
@@ -42,11 +59,9 @@ defineEmits(['select'])
 
         <div>
           <strong>Location</strong>
-          <p v-if="user.addresses">
-            {{ user.addresses.street }}<br />
-            {{ user.addresses.city }}
+          <p>
+            {{ user.location || '-' }}
           </p>
-          <p v-else>-</p>
         </div>
       </div>
 
@@ -103,6 +118,7 @@ defineEmits(['select'])
 }
 
 .user-card__avatar {
+  overflow: hidden; 
   width: 58px;
   height: 58px;
   flex-shrink: 0;
@@ -117,6 +133,13 @@ defineEmits(['select'])
 
   font-size: 20px;
   font-weight: 600;
+}
+
+.user-card__avatar-image {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
 }
 
 .user-card__identity h2 {

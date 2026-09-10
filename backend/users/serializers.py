@@ -92,7 +92,7 @@ class AddressSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField()
-    display_name = serializers.SerializerMethodField()
+    display_name = serializers.CharField(read_only=True,)
 
     addresses = AddressSerializer(
         read_only=True,
@@ -134,18 +134,6 @@ class UserSerializer(serializers.ModelSerializer):
             return None
 
         return email_record.email
-
-    def get_display_name(self, obj):
-        full_name = " ".join(
-            part
-            for part in (
-                obj.first_name.strip(),
-                obj.last_name.strip(),
-            )
-            if part
-        )
-
-        return full_name or obj.username
     
 class ChangePasswordSerializer(
     serializers.Serializer
@@ -241,35 +229,6 @@ class ChangePasswordSerializer(
         )
 
         return user
-
-class UserProfileUpdateSerializer(
-    serializers.ModelSerializer
-):
-    company_id = serializers.PrimaryKeyRelatedField(
-        source="company",
-        queryset=Company.objects.filter(
-            is_active=True,
-        ),
-        required=False,
-        allow_null=True,
-        write_only=True,
-    )
-
-    profile_photo = serializers.ImageField(
-        required=False,
-        allow_null=True,
-    )
-
-    class Meta:
-        model = User
-        fields = (
-            "first_name",
-            "last_name",
-            "location",
-            "website",
-            "profile_photo",
-            "company_id",
-        )
 
 class UserProfileUpdateSerializer(
     serializers.ModelSerializer

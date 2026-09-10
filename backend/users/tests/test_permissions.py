@@ -3,6 +3,10 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from authorization.services.assignments import assign_default_role
+from authorization.models import (
+    Permission,
+    UserPermissionOverride,
+)
 
 
 User = get_user_model()
@@ -29,6 +33,11 @@ class UserPermissionTests(APITestCase):
             username="admin",
             email="admin@test.com",
             password="Admin123!",
+        )
+        self.manage_others_permission = (
+            Permission.objects.get(
+                key="users.manage_others",
+            )
         )
 
     def test_unauthenticated_user_cannot_access_users(self):
@@ -76,7 +85,9 @@ class UserPermissionTests(APITestCase):
         )
 
     def test_normal_user_cannot_update_user(self):
-        self.client.force_authenticate(user=self.user01)
+        self.client.force_authenticate(
+            user=self.user01,
+        )
 
         response = self.client.patch(
             reverse(
@@ -84,7 +95,7 @@ class UserPermissionTests(APITestCase):
                 args=[self.user02.id],
             ),
             {
-                "name": "Changed",
+                "first_name": "Changed",
             },
             format="json",
         )
@@ -100,6 +111,48 @@ class UserPermissionTests(APITestCase):
             self.user02.first_name,
             "Changed",
         )
+
+        def test_user_with_manage_others_can_update_user(
+            self,
+        ):
+            UserPermissionOverride.objects.create(
+                user=self.user01,
+                permission=self.manage_others_permission,
+                allowed=True,
+            )
+
+            self.client.force_authenticate(
+                user=self.user01,
+            )
+
+            response = self.client.patch(
+                reverse(
+                    "user-detail",
+                    args=[self.user02.id],
+                ),
+                {
+                    "first_name": "Updated",
+                    "location": "Ankara",
+                },
+                format="json",
+            )
+
+            self.assertEqual(
+                response.status_code,
+                status.HTTP_200_OK,
+            )
+
+            self.user02.refresh_from_db()
+
+            self.assertEqual(
+                self.user02.first_name,
+                "Updated",
+            )
+
+            self.assertEqual(
+                self.user02.location,
+                "Ankara",
+            )
 
     def test_normal_user_cannot_delete_user(self):
         self.client.force_authenticate(user=self.user01)
@@ -165,7 +218,9 @@ class UserPermissionTests(APITestCase):
         )
 
     def test_superuser_can_update_user(self):
-        self.client.force_authenticate(user=self.superuser)
+        self.client.force_authenticate(
+            user=self.superuser,
+        )
 
         response = self.client.patch(
             reverse(
@@ -173,7 +228,8 @@ class UserPermissionTests(APITestCase):
                 args=[self.user01.id],
             ),
             {
-                "username": "updated_user01",
+                "first_name": "Updated",
+                "username": "should_not_change",
             },
             format="json",
         )
@@ -186,8 +242,13 @@ class UserPermissionTests(APITestCase):
         self.user01.refresh_from_db()
 
         self.assertEqual(
+            self.user01.first_name,
+            "Updated",
+        )
+
+        self.assertEqual(
             self.user01.username,
-            "updated_user01",
+            "user01",
         )
 
     def test_superuser_can_delete_user(self):

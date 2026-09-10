@@ -1,33 +1,36 @@
 import api from '@/services/api'
+
 const USERS_ME = '/users/me/'
 
 const getProfile = () => {
-    return api.get(USERS_ME)
+  return api.get(
+    USERS_ME,
+  )
 }
 
 const updateProfile = (payload) => {
-    return api.patch(
-        'USER_ME',
-        payload,
-    )
+  return api.patch(
+    USERS_ME,
+    payload,
+  )
 }
 
 const updateProfilePhoto = (file) => {
-    const formData = new FormData()
+  const formData = new FormData()
 
-    FormData.append(
-        'profile_photo',
-        file,
-    )
+  formData.append(
+    'profile_photo',
+    file,
+  )
 
-    return api.patch(
-        'USER_ME',
-        formData,
-    )
+  return api.patch(
+    USERS_ME,
+    formData,
+  )
 }
 
-export default{
-    getProfile,
-    updateProfile,
-    updateProfilePhoto,
+export default {
+  getProfile,
+  updateProfile,
+  updateProfilePhoto,
 }

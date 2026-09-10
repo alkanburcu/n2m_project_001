@@ -238,15 +238,22 @@ onMounted(() => {
           class="feed-author"
           @click="openProfile(post)"
         >
-          <span
-            class="feed-author__avatar"
-          >
-            {{
-              getInitial(
-                post.display_name
-                || post.username,
-              )
-            }}
+          <span class="feed-author__avatar">
+            <img
+              v-if="post.profile_photo"
+              :src="post.profile_photo"
+              alt=""
+              class="author-avatar__image"
+            >
+
+            <span v-else>
+              {{
+                getInitial(
+                  post.display_name
+                  || post.username,
+                )
+              }}
+            </span>
           </span>
 
           <span
@@ -337,17 +344,22 @@ onMounted(() => {
                   )
                 "
               >
-                <span
-                  class="
-                    modal-author__avatar
-                  "
-                >
-                  {{
-                    getInitial(
-                      selectedPost.display_name
-                      || selectedPost.username,
-                    )
-                  }}
+                <span class="modal-author__avatar">
+                  <img
+                    v-if="selectedPost.profile_photo"
+                    :src="selectedPost.profile_photo"
+                    alt=""
+                    class="author-avatar__image"
+                  >
+
+                  <span v-else>
+                    {{
+                      getInitial(
+                        selectedPost.display_name
+                        || selectedPost.username,
+                      )
+                    }}
+                  </span>
                 </span>
 
                 <span
@@ -452,16 +464,22 @@ onMounted(() => {
                     :key="comment.id"
                     class="comment"
                   >
-                    <div
-                      class="
-                        comment__avatar
-                      "
-                    >
-                      {{
-                        getInitial(
-                          comment.display_name,
-                        )
-                      }}
+                    <div class="comment__avatar">
+                      <img
+                        v-if="comment.profile_photo"
+                        :src="comment.profile_photo"
+                        alt=""
+                        class="author-avatar__image"
+                      >
+
+                      <span v-else>
+                        {{
+                          getInitial(
+                            comment.display_name
+                            || comment.username,
+                          )
+                        }}
+                      </span>
                     </div>
 
                     <div
@@ -645,12 +663,12 @@ onMounted(() => {
   display: grid;
   place-items: center;
 
-  color: var(--color-primary);
+  overflow: hidden;
 
+  color: var(--color-primary);
   font-weight: 700;
 
   background: #f0eef6;
-
   border-radius: 50%;
 }
 
@@ -925,6 +943,15 @@ onMounted(() => {
   height: 32px;
 
   font-size: 10px;
+}
+
+.author-avatar__image {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
 }
 
 .comment__content {

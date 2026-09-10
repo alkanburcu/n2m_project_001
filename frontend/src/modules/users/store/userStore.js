@@ -35,5 +35,39 @@ export const useUserStore = defineStore('users', () => {
     } finally {isLoading.value = false}
   }
 
-  return {users,selectedUser,isLoading,error,fetchUsers,fetchUserById,}
+  const syncUser = (userData) => {
+  if (!userData?.id) {
+    return
+  }
+
+  if (
+    selectedUser.value
+    && String(selectedUser.value.id)
+      === String(userData.id)
+  ) {
+    selectedUser.value = {
+      ...selectedUser.value,
+      ...userData,
+    }
+  }
+
+  const userIndex =
+    users.value.findIndex(
+      (user) => {
+        return (
+          String(user.id)
+          === String(userData.id)
+        )
+      },
+    )
+
+  if (userIndex !== -1) {
+    users.value[userIndex] = {
+      ...users.value[userIndex],
+      ...userData,
+    }
+  }
+}
+
+  return {users,selectedUser,isLoading,error,fetchUsers, fetchUserById, syncUser,}
 })

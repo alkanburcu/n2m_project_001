@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { useAuthStore } from '@/modules/auth/store/authStore'
-
+import { useUserStore } from './userStore'
 import profileService from '../services/profileService'
 
 
@@ -16,10 +16,15 @@ export const useProfileStore = defineStore(
 
     const error = ref(null)
 
-    const syncAuthUser = (profileData) => {
+    const syncUserState = (profileData) => {
       const authStore = useAuthStore()
+      const userStore = useUserStore()
 
       authStore.syncProfile(
+        profileData,
+      )
+
+      userStore.syncUser(
         profileData,
       )
     }
@@ -35,7 +40,7 @@ export const useProfileStore = defineStore(
         profile.value =
           response.data
 
-        syncAuthUser(
+        syncUserState(
           response.data,
         )
 
@@ -65,7 +70,7 @@ export const useProfileStore = defineStore(
         profile.value =
           response.data
 
-        syncAuthUser(
+        syncUserState(
           response.data,
         )
 
@@ -96,7 +101,7 @@ export const useProfileStore = defineStore(
         profile.value =
           response.data
 
-        syncAuthUser(
+        syncUserState(
           response.data,
         )
 

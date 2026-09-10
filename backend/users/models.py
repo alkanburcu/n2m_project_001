@@ -28,6 +28,13 @@ class User(AbstractUser, BaseModel):
         related_name="users",
     )
 
+    @property
+    def display_name(self):
+        return (
+            self.get_full_name().strip()
+            or self.username
+        )
+
     def __str__(self):
         return self.username
 

@@ -8,7 +8,15 @@ class PostSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
-    display_name = serializers.SerializerMethodField()
+    display_name = serializers.CharField(
+        source="user.display_name",
+        read_only=True,
+    )
+
+    profile_photo = serializers.ImageField(
+        source="user.profile_photo",
+        read_only=True,
+    )
 
     def get_display_name(self, obj):
         return obj.user.name or obj.user.username
@@ -21,6 +29,7 @@ class PostSerializer(serializers.ModelSerializer):
             "user",
             "username",
             "display_name",
+            "profile_photo",
             "title",
             "body",
             "created_at",
@@ -31,6 +40,7 @@ class PostSerializer(serializers.ModelSerializer):
             "id",
             "username",
             "display_name",
+            "profile_photo",
             "created_at",
             "updated_at",
         )
@@ -65,14 +75,33 @@ class CommentSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
-    display_name = serializers.SerializerMethodField()
+    display_name = serializers.CharField(
+        source="user.display_name",
+        read_only=True,
+    )
 
-    def get_display_name(self, obj):
-        return obj.user.name or obj.user.username
+    profile_photo = serializers.ImageField(
+        source="user.profile_photo",
+        read_only=True,
+    )
 
     class Meta:
         model = Comment
 
-        fields = ("id","post","user","username","display_name","body","created_at","updated_at",)
+        fields = ("id",
+                  "post",
+                  "user",
+                  "username",
+                  "display_name",
+                  "profile_photo",
+                  "body",
+                  "created_at",
+                  "updated_at",)
 
-        read_only_fields = ("id","user","username","display_name", "created_at","updated_at",)
+        read_only_fields = ("id",
+                            "user",
+                            "username",
+                            "display_name", 
+                            "profile_photo", 
+                            "created_at",
+                            "updated_at",)
