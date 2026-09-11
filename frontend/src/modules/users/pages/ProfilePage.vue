@@ -1,10 +1,13 @@
 <script setup>
 import {
+  computed,
   onBeforeUnmount,
-  onMounted,
   reactive,
   ref,
+  watch,
 } from 'vue'
+
+import { useRoute } from 'vue-router'
 
 import {
   IconCamera,
@@ -15,6 +18,12 @@ import {
 import { useProfileStore } from '../store/profileStore'
 import CompanySelect from '@/modules/companies/components/CompanySelect.vue'
 import AddCompanyDialog from '@/modules/companies/components/AddCompanyDialog.vue'
+
+const route = useRoute()
+
+const targetUserId = computed(() => {
+  return route.params.id || null
+})
 
 const profileStore = useProfileStore()
 
@@ -58,7 +67,7 @@ const populateForm = (profile) => {
 
 const loadProfile = async () => {
   const profile =
-    await profileStore.fetchProfile()
+    await profileStore.fetchProfile( targetUserId.value, )
 
   populateForm(profile)
 }
@@ -96,11 +105,14 @@ const saveProfile = async () => {
       location: form.location,
       website: form.website,
       company_id: form.companyId,
-    })
+    },
+    targetUserId.value,
+  )
 
     if (selectedPhoto.value) {
       await profileStore.updateProfilePhoto(
         selectedPhoto.value,
+        targetUserId.value,
       )
 
       selectedPhoto.value = null
@@ -117,9 +129,15 @@ const saveProfile = async () => {
 }
 
 
-onMounted(() => {
-  loadProfile()
-})
+watch(
+  targetUserId,
+  () => {
+    loadProfile()
+  },
+  {
+    immediate: true,
+  },
+)
 
 
 onBeforeUnmount(() => {

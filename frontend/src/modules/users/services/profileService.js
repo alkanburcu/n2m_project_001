@@ -1,21 +1,33 @@
 import api from '@/services/api'
 
-const USERS_ME = '/users/me/'
+const getProfileUrl = (userId = null) => {
+  if (userId) {
+    return `/users/${userId}/`
+  }
 
-const getProfile = () => {
+  return '/users/me/'
+}
+
+const getProfile = (userId = null) => {
   return api.get(
-    USERS_ME,
+    getProfileUrl(userId),
   )
 }
 
-const updateProfile = (payload) => {
+const updateProfile = (
+  payload,
+  userId = null,
+) => {
   return api.patch(
-    USERS_ME,
+    getProfileUrl(userId),
     payload,
   )
 }
 
-const updateProfilePhoto = (file) => {
+const updateProfilePhoto = (
+  file,
+  userId = null,
+) => {
   const formData = new FormData()
 
   formData.append(
@@ -24,7 +36,7 @@ const updateProfilePhoto = (file) => {
   )
 
   return api.patch(
-    USERS_ME,
+    getProfileUrl(userId),
     formData,
   )
 }

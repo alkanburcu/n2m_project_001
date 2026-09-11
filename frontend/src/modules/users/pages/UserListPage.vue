@@ -35,6 +35,41 @@ const openUser = (userId) => {
     },
   })
 }
+
+const canEditUser = (user) => {
+  if (!authStore.can('users.update')) {
+    return false
+  }
+
+  return (
+    String(user.id)
+      === String(authStore.user?.id)
+    || authStore.can(
+      'users.manage_others',
+    )
+  )
+}
+
+const editUser = (userId) => {
+  if (
+    String(userId)
+    === String(authStore.user?.id)
+  ) {
+    router.push({
+      name: 'profile',
+    })
+
+    return
+  }
+
+  router.push({
+    name: 'user-profile-edit',
+
+    params: {
+      id: userId,
+    },
+  })
+}
 </script>
 
 <template>
@@ -73,7 +108,9 @@ const openUser = (userId) => {
           v-for="user in userStore.users"
           :key="user.id"
           :user="user"
+          :can-edit="canEditUser(user)"
           @select="openUser"
+          @edit="editUser"
         />
       </section>
       <CreateUserDialog

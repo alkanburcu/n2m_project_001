@@ -14,6 +14,18 @@ const userRoutes = [
 
   meta: {requiresAuth: true,},
   },
+
+  {
+    path: '/users/:id/edit',
+    name: 'user-profile-edit',
+    component: ProfilePage,
+
+    meta: {
+      requiresAuth: true,
+      permission: 'users.update',
+    },
+  },
+
   {
     path: '/users',
     name: 'users',

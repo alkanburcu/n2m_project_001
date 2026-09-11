@@ -20,29 +20,35 @@ export const useProfileStore = defineStore(
       const authStore = useAuthStore()
       const userStore = useUserStore()
 
-      authStore.syncProfile(
-        profileData,
-      )
-
       userStore.syncUser(
         profileData,
       )
-    }
 
-    const fetchProfile = async () => {
+      if (
+        String(profileData?.id)
+        === String(authStore.user?.id)
+      ) {
+        authStore.syncProfile(
+          profileData,
+        )
+      }
+    }
+    const fetchProfile = async (
+      userId = null,
+    ) => {
       isLoading.value = true
       error.value = null
 
       try {
         const response =
-          await profileService.getProfile()
+          await profileService.getProfile(
+            userId,
+          )
 
         profile.value =
           response.data
 
-        syncUserState(
-          response.data,
-        )
+        syncUserState(response.data,)
 
         return profile.value
       } catch (err) {
@@ -57,6 +63,7 @@ export const useProfileStore = defineStore(
 
     const updateProfile = async (
       payload,
+      userId = null,
     ) => {
       isSaving.value = true
       error.value = null
@@ -65,6 +72,7 @@ export const useProfileStore = defineStore(
         const response =
           await profileService.updateProfile(
             payload,
+            userId,
           )
 
         profile.value =
@@ -87,6 +95,7 @@ export const useProfileStore = defineStore(
 
     const updateProfilePhoto = async (
       file,
+      userId = null,
     ) => {
       isSaving.value = true
       error.value = null
@@ -96,6 +105,7 @@ export const useProfileStore = defineStore(
           await profileService
             .updateProfilePhoto(
               file,
+              userId,
             )
 
         profile.value =
