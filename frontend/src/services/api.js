@@ -49,8 +49,14 @@ api.interceptors.response.use(
 
         return api(originalRequest)
       } catch (refreshError) {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
+        localStorage.removeItem(
+          'access_token',
+        )
+        localStorage.removeItem(
+          'refresh_token',
+        )
+
+        window.location.assign('/login',)
 
         return Promise.reject(refreshError)
       }
