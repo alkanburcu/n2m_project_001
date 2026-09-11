@@ -35,6 +35,15 @@ export const useUserStore = defineStore('users', () => {
     } finally {isLoading.value = false}
   }
 
+  const createUser = async (data) => {
+  const response =
+    await userService.createUser(data)
+
+  await fetchUsers()
+
+  return response.data
+}
+
   const syncUser = (userData) => {
   if (!userData?.id) {
     return
@@ -69,5 +78,5 @@ export const useUserStore = defineStore('users', () => {
   }
 }
 
-  return {users,selectedUser,isLoading,error,fetchUsers, fetchUserById, syncUser,}
+  return {users,selectedUser,isLoading,error,fetchUsers, fetchUserById, syncUser,createUser,}
 })
