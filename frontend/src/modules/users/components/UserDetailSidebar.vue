@@ -2,7 +2,7 @@
 import {
   computed,
   watch,
-}from 'vue'
+} from 'vue'
 
 import {
   useRoute,
@@ -55,9 +55,15 @@ const goEditProfile = async () => {
 
 watch(
   () => route.params.id,
-  (userId) => {
-    if (userId) {
-      userStore.fetchUserById(userId)
+  async (userId) => {
+    if (!userId) {
+      return
+    }
+
+    try {
+      await userStore.fetchUserById(userId)
+    } catch {
+      // Error state is handled by userStore
     }
   },
   {
@@ -358,27 +364,6 @@ watch(
   box-shadow:
     inset 0 0 0 2px
     rgba(82, 63, 158, 0.22);
-}
-
-.detail-sidebar__avatar {
-  width: 44px;
-  height: 44px;
-
-  flex-shrink: 0;
-
-  display: grid;
-  place-items: center;
-
-  overflow: hidden;
-
-  color: var(--color-primary);
-
-  font-size: 16px;
-  font-weight: 600;
-
-  background: #eeeeee;
-
-  border-radius: 50%;
 }
 
 .detail-sidebar__avatar-image {

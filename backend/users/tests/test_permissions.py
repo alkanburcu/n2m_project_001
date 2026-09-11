@@ -112,47 +112,47 @@ class UserPermissionTests(APITestCase):
             "Changed",
         )
 
-        def test_user_with_manage_others_can_update_user(
-            self,
-        ):
-            UserPermissionOverride.objects.create(
-                user=self.user01,
-                permission=self.manage_others_permission,
-                allowed=True,
-            )
+    def test_user_with_manage_others_can_update_user(
+        self,
+    ):
+        UserPermissionOverride.objects.create(
+            user=self.user01,
+            permission=self.manage_others_permission,
+            allowed=True,
+        )
 
-            self.client.force_authenticate(
-                user=self.user01,
-            )
+        self.client.force_authenticate(
+            user=self.user01,
+        )
 
-            response = self.client.patch(
-                reverse(
-                    "user-detail",
-                    args=[self.user02.id],
-                ),
-                {
-                    "first_name": "Updated",
-                    "location": "Ankara",
-                },
-                format="json",
-            )
+        response = self.client.patch(
+            reverse(
+                "user-detail",
+                args=[self.user02.id],
+            ),
+            {
+                "first_name": "Updated",
+                "location": "Ankara",
+            },
+            format="json",
+        )
 
-            self.assertEqual(
-                response.status_code,
-                status.HTTP_200_OK,
-            )
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
 
-            self.user02.refresh_from_db()
+        self.user02.refresh_from_db()
 
-            self.assertEqual(
-                self.user02.first_name,
-                "Updated",
-            )
+        self.assertEqual(
+            self.user02.first_name,
+            "Updated",
+        )
 
-            self.assertEqual(
-                self.user02.location,
-                "Ankara",
-            )
+        self.assertEqual(
+            self.user02.location,
+            "Ankara",
+        )
 
     def test_normal_user_cannot_delete_user(self):
         self.client.force_authenticate(user=self.user01)
