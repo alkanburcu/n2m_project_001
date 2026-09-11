@@ -1,3 +1,7 @@
+from authorization.models import (
+    Permission,
+    UserPermissionOverride,
+)
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -40,6 +44,10 @@ class CommentPermissionTests(APITestCase):
             post=self.post,
             user=self.user02,
             body="User02 comment",
+        )
+
+        self.manage_others_permission = Permission.objects.get(
+            key="comments.manage_others",
         )
 
         assign_default_role(user=self.user01)
@@ -99,3 +107,39 @@ class CommentPermissionTests(APITestCase):
 
         self.comment.refresh_from_db()
         self.assertEqual(self.comment.body, "Admin updated")
+
+    def test_user_with_manage_others_can_update_other_users_comment(
+            self,
+        ):
+            UserPermissionOverride.objects.create(
+                user=self.user01,
+                permission=self.manage_others_permission,
+                allowed=True,
+            )
+
+            self.client.force_authenticate(
+                user=self.user01,
+            )
+
+            response = self.client.patch(
+                reverse(
+                    "comment-detail",
+                    args=[self.comment.id],
+                ),
+                {
+                    "body": "Managed comment",
+                },
+                format="json",
+            )
+
+            self.assertEqual(
+                response.status_code,
+                status.HTTP_200_OK,
+            )
+
+            self.comment.refresh_from_db()
+
+            self.assertEqual(
+                self.comment.body,
+                "Managed comment",
+            )

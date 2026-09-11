@@ -87,6 +87,14 @@ class CommentViewSet(ModelViewSet):
         "destroy": "comments.delete",
     }
 
+    manage_others_permission = "comments.manage_others"
+
+    def can_manage_others(self):
+        return has_permission(
+            self.request.user,
+            self.manage_others_permission,
+        )
+
     def get_queryset(self):
         queryset = Comment.objects.select_related(
             "user",
@@ -94,25 +102,25 @@ class CommentViewSet(ModelViewSet):
         ).all()
 
         if (
-            not self.request.user.is_superuser
-            and self.action not in {"list", "retrieve"}
+            self.action not in {"list", "retrieve"}
+            and not self.can_manage_others()
         ):
             queryset = queryset.filter(
-                user=self.request.user
+                user=self.request.user,
             )
 
         post_id = self.request.query_params.get(
-            "post"
+            "post",
         )
 
         if post_id:
             queryset = queryset.filter(
-                post_id=post_id
+                post_id=post_id,
             )
 
         return queryset
 
     def perform_create(self, serializer):
         serializer.save(
-            user=self.request.user
+            user=self.request.user,
         )
