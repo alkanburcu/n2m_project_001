@@ -35,9 +35,16 @@ export const useAuthStore = defineStore ('auth', () => {
   }
 
 const logout = async () => {
+  const currentRefreshToken =
+    localStorage.getItem(
+      'refresh_token',
+    )
+
   try {
-    if (refreshToken.value) {
-      await authService.logout(refreshToken.value)
+    if (currentRefreshToken) {
+      await authService.logout(
+        currentRefreshToken,
+      )
     }
   } finally {
     clearAuth()
