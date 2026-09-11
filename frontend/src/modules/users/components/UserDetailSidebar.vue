@@ -1,7 +1,8 @@
 <script setup>
 import {
   computed,
-} from 'vue'
+  watch,
+}from 'vue'
 
 import {
   useRoute,
@@ -51,6 +52,18 @@ const goEditProfile = async () => {
     name: 'profile',
   })
 }
+
+watch(
+  () => route.params.id,
+  (userId) => {
+    if (userId) {
+      userStore.fetchUserById(userId)
+    }
+  },
+  {
+    immediate: true,
+  },
+)
 </script>
 
 <template>
