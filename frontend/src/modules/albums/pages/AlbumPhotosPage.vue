@@ -1084,6 +1084,8 @@ onBeforeUnmount(() => {
   font-weight: 700;
 }
 
+/* HEADER ACTIONS */
+
 .back-button,
 .new-photo-button {
   display: inline-flex;
@@ -1105,6 +1107,10 @@ onBeforeUnmount(() => {
   border-radius: 7px;
 
   cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease;
 }
 
 .back-button:hover,
@@ -1112,12 +1118,17 @@ onBeforeUnmount(() => {
   color: var(--color-primary);
 
   background:
-    rgba(82, 63, 158, 0.06);
+    rgba(
+      var(--color-primary-rgb),
+      0.06
+    );
 }
 
 .new-photo-button svg {
   color: var(--color-primary);
 }
+
+/* PAGE STATE */
 
 .page-state {
   color: var(--color-subtitle);
@@ -1126,8 +1137,10 @@ onBeforeUnmount(() => {
 }
 
 .page-state--error {
-  color: #b42318;
+  color: var(--color-danger);
 }
+
+/* CREATE PHOTO */
 
 .photo-create {
   max-width: 620px;
@@ -1141,7 +1154,8 @@ onBeforeUnmount(() => {
 
   padding: 18px;
 
-  background: #ffffff;
+  background:
+    var(--color-surface);
 
   border:
     1px solid var(--color-border);
@@ -1165,23 +1179,34 @@ onBeforeUnmount(() => {
 
   color: var(--color-subtitle);
 
-  background: #fafafd;
+  background:
+    var(--color-surface-soft);
 
   border:
     1px dashed
-    rgba(82, 63, 158, 0.3);
+    rgba(
+      var(--color-primary-rgb),
+      0.3
+    );
 
   border-radius: 10px;
 
   cursor: pointer;
+
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .drop-zone:hover {
   background:
-    rgba(82, 63, 158, 0.035);
+    var(--color-surface-hover);
 
   border-color:
-    rgba(82, 63, 158, 0.55);
+    rgba(
+      var(--color-primary-rgb),
+      0.55
+    );
 }
 
 .drop-zone svg {
@@ -1247,9 +1272,23 @@ onBeforeUnmount(() => {
   background: transparent;
 
   border: 0;
+  border-radius: 6px;
 
   cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease;
 }
+
+.selected-file button:hover {
+  color: var(--color-title);
+
+  background:
+    var(--color-surface-hover);
+}
+
+/* INPUT */
 
 .photo-input {
   width: 100%;
@@ -1263,7 +1302,8 @@ onBeforeUnmount(() => {
   font: inherit;
   font-size: 12px;
 
-  background: #ffffff;
+  background:
+    var(--color-surface);
 
   border:
     1px solid var(--color-border);
@@ -1271,12 +1311,33 @@ onBeforeUnmount(() => {
   border-radius: 8px;
 
   outline: none;
+
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.photo-input::placeholder {
+  color: var(--color-subtitle);
 }
 
 .photo-input:focus {
   border-color:
-    rgba(82, 63, 158, 0.45);
+    rgba(
+      var(--color-primary-rgb),
+      0.45
+    );
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      var(--color-primary-rgb),
+      0.08
+    );
 }
+
+/* PHOTO GRID */
 
 .photo-grid {
   display: grid;
@@ -1292,12 +1353,15 @@ onBeforeUnmount(() => {
   gap: 20px;
 }
 
+/* PHOTO CARD */
+
 .photo-card {
   min-width: 0;
 
   overflow: hidden;
 
-  background: #ffffff;
+  background:
+    var(--color-surface);
 
   border:
     1px solid var(--color-border);
@@ -1315,11 +1379,14 @@ onBeforeUnmount(() => {
     translateY(-2px);
 
   border-color:
-    rgba(82, 63, 158, 0.2);
+    rgba(
+      var(--color-primary-rgb),
+      0.22
+    );
 
   box-shadow:
     0 8px 22px
-    rgba(30, 34, 45, 0.07);
+    rgba(0, 0, 0, 0.12);
 }
 
 .photo-card__image-wrapper {
@@ -1329,7 +1396,8 @@ onBeforeUnmount(() => {
 
   overflow: hidden;
 
-  background: #f6f6f8;
+  background:
+    var(--color-surface-muted);
 
   cursor: zoom-in;
 }
@@ -1341,6 +1409,7 @@ onBeforeUnmount(() => {
   display: block;
 
   object-fit: cover;
+  object-position: center;
 }
 
 .photo-card__image-wrapper:focus-visible {
@@ -1350,6 +1419,8 @@ onBeforeUnmount(() => {
 
   outline-offset: -2px;
 }
+
+/* PHOTO OVERLAY */
 
 .photo-card__overlay {
   position: absolute;
@@ -1393,7 +1464,8 @@ onBeforeUnmount(() => {
 
   padding: 0;
 
-  color: #ffffff;
+  color:
+    var(--color-on-primary);
 
   background:
     rgba(20, 20, 24, 0.48);
@@ -1402,11 +1474,18 @@ onBeforeUnmount(() => {
   border-radius: 8px;
 
   cursor: pointer;
+
+  transition:
+    background-color 0.18s ease,
+    opacity 0.18s ease;
 }
 
 .overlay-button:hover {
   background:
-    rgba(82, 63, 158, 0.88);
+    rgba(
+      var(--color-primary-rgb),
+      0.88
+    );
 }
 
 .overlay-button--danger:hover {
@@ -1420,6 +1499,8 @@ onBeforeUnmount(() => {
   opacity: 0.5;
 }
 
+/* PHOTO FOOTER */
+
 .photo-card__footer {
   padding: 12px 14px;
 
@@ -1430,9 +1511,14 @@ onBeforeUnmount(() => {
   font-size: 12px;
   font-weight: 600;
 
+  background:
+    var(--color-surface);
+
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* PHOTO EDIT */
 
 .photo-edit {
   display: flex;
@@ -1441,6 +1527,9 @@ onBeforeUnmount(() => {
   gap: 11px;
 
   padding: 12px;
+
+  background:
+    var(--color-surface);
 }
 
 .edit-image {
@@ -1452,7 +1541,8 @@ onBeforeUnmount(() => {
 
   overflow: hidden;
 
-  background: #f6f6f8;
+  background:
+    var(--color-surface-muted);
 
   border: 0;
   border-radius: 9px;
@@ -1467,6 +1557,7 @@ onBeforeUnmount(() => {
   display: block;
 
   object-fit: cover;
+  object-position: center;
 }
 
 .edit-image::after {
@@ -1498,7 +1589,8 @@ onBeforeUnmount(() => {
 
   padding: 6px 9px;
 
-  color: #ffffff;
+  color:
+    var(--color-on-primary);
 
   font-size: 10px;
   font-weight: 600;
@@ -1508,6 +1600,8 @@ onBeforeUnmount(() => {
 
   border-radius: 6px;
 }
+
+/* FORM ACTIONS */
 
 .form-actions {
   display: flex;
@@ -1528,6 +1622,10 @@ onBeforeUnmount(() => {
   border-radius: 7px;
 
   cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease;
 }
 
 .text-button {
@@ -1536,10 +1634,24 @@ onBeforeUnmount(() => {
   background: transparent;
 }
 
-.primary-button {
-  color: #ffffff;
+.text-button:hover {
+  color: var(--color-title);
 
-  background: var(--color-primary);
+  background:
+    var(--color-surface-hover);
+}
+
+.primary-button {
+  color:
+    var(--color-on-primary);
+
+  background:
+    var(--color-primary);
+}
+
+.primary-button:hover:not(:disabled) {
+  background:
+    var(--color-primary-hover);
 }
 
 .primary-button:disabled {
@@ -1547,6 +1659,8 @@ onBeforeUnmount(() => {
 
   opacity: 0.5;
 }
+
+/* RESPONSIVE */
 
 @media (max-width: 650px) {
   .photos-header {
