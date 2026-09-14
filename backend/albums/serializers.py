@@ -42,7 +42,11 @@ class AlbumSerializer(serializers.ModelSerializer):
         }
 
     def get_preview_photos(self, obj):
-        photos = list(obj.photos.all())[:4]
+        photos = getattr(
+            obj,
+            "active_photos",
+            [],
+        )[:4]
 
         return AlbumPreviewPhotoSerializer(
             photos,

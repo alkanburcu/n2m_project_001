@@ -233,51 +233,54 @@ class AlbumPhotoPermissionTests(APITestCase):
         )
 
     def test_owner_can_delete_photo(self):
-        self.client.force_authenticate(user=self.user01)
+        self.client.force_authenticate(user=self.user01,)
 
         response = self.client.delete(
-            reverse(
-                "photo-detail",
-                args=[self.photo.id],
-            )
+            reverse("photo-detail", args=[self.photo.id],)
         )
 
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_204_NO_CONTENT,
+        self.assertEqual(response.status_code,status.HTTP_204_NO_CONTENT,)
+
+        self.assertTrue(
+            Photo.objects.filter(id=self.photo.id,).exists()
         )
 
-        self.assertFalse(
-            Photo.objects.filter(
-                id=self.photo.id
-            ).exists()
+        self.photo.refresh_from_db()
+
+        self.assertFalse(self.photo.is_active)
+
+        response = self.client.get(
+            reverse("photo-detail", args=[self.photo.id],)
         )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,)
 
     def test_owner_can_delete_album(self):
-        album = Album.objects.create(
-            user=self.user01,
-            title="Delete Test",
-        )
+        album = Album.objects.create(user=self.user01, title="Delete Test",)
 
-        self.client.force_authenticate(user=self.user01)
+        self.client.force_authenticate(user=self.user01,)
 
         response = self.client.delete(
-            reverse(
-                "album-detail",
-                args=[album.id],
-            )
+            reverse("album-detail", args=[album.id],)
         )
 
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_204_NO_CONTENT,
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT,)
+
+        self.assertTrue(
+            Album.objects.filter(id=album.id,).exists()
         )
+
+        album.refresh_from_db()
 
         self.assertFalse(
-            Album.objects.filter(
-                id=album.id
-            ).exists()
+            album.is_active
         )
+
+        response = self.client.get(
+            reverse("album-detail",args=[album.id],)
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,)
 
     def test_other_user_cannot_delete_album(self):
         self.client.force_authenticate(user=self.user02)
@@ -428,4 +431,50 @@ class AlbumPhotoPermissionTests(APITestCase):
             other_album.title,
             "User02 Album",
         )
-        
+
+    def test_soft_deleted_album_hides_its_photos(
+        self,
+    ):
+        self.client.force_authenticate(
+            user=self.user01,
+        )
+
+        response = self.client.delete(
+            reverse(
+                "album-detail",
+                args=[self.album.id],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.album.refresh_from_db()
+        self.photo.refresh_from_db()
+
+        self.assertFalse(
+            self.album.is_active
+        )
+
+        self.assertTrue(
+            Photo.objects.filter(
+                id=self.photo.id,
+            ).exists()
+        )
+
+        self.assertTrue(
+            self.photo.is_active
+        )
+        response = self.client.get(
+            reverse(
+                "photo-detail",
+                args=[self.photo.id],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )

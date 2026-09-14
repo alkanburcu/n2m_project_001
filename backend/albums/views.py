@@ -6,7 +6,7 @@ from authorization.services.resolver import has_permission
 
 from .models import Album, Photo
 from .serializers import AlbumSerializer, PhotoSerializer
-from django.db.models import Count
+from django.db.models import (Count, Prefetch, Q,)
 
 
 class AlbumViewSet(ModelViewSet):
@@ -33,10 +33,27 @@ class AlbumViewSet(ModelViewSet):
     def get_queryset(self):
         queryset = (
             Album.objects
+            .filter(
+                is_active=True,
+                user__is_active=True,
+            )
             .select_related("user")
-            .prefetch_related("photos")
+            .prefetch_related(
+                Prefetch(
+                    "photos",
+                    queryset=Photo.objects.filter(
+                        is_active=True,
+                    ),
+                    to_attr="active_photos",
+                )
+            )
             .annotate(
-                photo_count=Count("photos"),
+                photo_count=Count(
+                    "photos",
+                    filter=Q(
+                        photos__is_active=True,
+                    ),
+                )
             )
         )
 
@@ -80,6 +97,16 @@ class AlbumViewSet(ModelViewSet):
             user=target_user,
         )
 
+    def perform_destroy(self, instance):
+        instance.is_active = False
+
+        instance.save(
+            update_fields=[
+                "is_active",
+                "updated_at",
+            ]
+        )
+
 
 class PhotoViewSet(ModelViewSet):
     serializer_class = PhotoSerializer
@@ -103,10 +130,14 @@ class PhotoViewSet(ModelViewSet):
         )
 
     def get_queryset(self):
-        queryset = Photo.objects.select_related(
+        queryset = Photo.objects.filter(
+            is_active=True,
+            album__is_active=True,
+            album__user__is_active=True,
+        ).select_related(
             "album",
             "album__user",
-        ).all()
+        )
 
         if (
             self.action not in {"list", "retrieve"}
@@ -151,3 +182,13 @@ class PhotoViewSet(ModelViewSet):
     def perform_update(self, serializer):
         self._check_album_scope(serializer)
         serializer.save()
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+
+        instance.save(
+            update_fields=[
+                "is_active",
+                "updated_at",
+            ]
+        )

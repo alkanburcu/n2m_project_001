@@ -29,9 +29,12 @@ class PostViewSet(ModelViewSet):
         )
 
     def get_queryset(self):
-        queryset = Post.objects.select_related(
+        queryset = Post.objects.filter(
+            is_active=True,
+            user__is_active=True,
+        ).select_related(
             "user",
-        ).all()
+        )
 
         if (
             self.action not in {"list", "retrieve"}
@@ -73,6 +76,16 @@ class PostViewSet(ModelViewSet):
             user=target_user,
         )
 
+    def perform_destroy(self, instance):
+        instance.is_active = False
+
+        instance.save(
+            update_fields=[
+                "is_active",
+                "updated_at",
+            ]
+        )
+
 
 class CommentViewSet(ModelViewSet):
     serializer_class = CommentSerializer
@@ -96,10 +109,15 @@ class CommentViewSet(ModelViewSet):
         )
 
     def get_queryset(self):
-        queryset = Comment.objects.select_related(
+        queryset = Comment.objects.filter(
+            is_active=True,
+            user__is_active=True,
+            post__is_active=True,
+            post__user__is_active=True,
+        ).select_related(
             "user",
             "post",
-        ).all()
+        )
 
         if (
             self.action not in {"list", "retrieve"}
@@ -123,4 +141,14 @@ class CommentViewSet(ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(
             user=self.request.user,
+        )
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+
+        instance.save(
+            update_fields=[
+                "is_active",
+                "updated_at",
+            ]
         )

@@ -35,11 +35,12 @@ class UserViewSet(ModelViewSet):
     }
 
     def get_queryset(self):
-        queryset = User.objects.select_related(
+        queryset = User.objects.filter(
+            is_active=True,
+        ).select_related(
             "company",
             "addresses__geo",
-        ).all()
-
+        )
         user = self.request.user
 
         if user.is_superuser:
@@ -89,6 +90,16 @@ class UserViewSet(ModelViewSet):
             return UserProfileUpdateSerializer
 
         return UserSerializer
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+
+        instance.save(
+            update_fields=[
+                "is_active",
+                "updated_at",
+            ]
+        )
 
     @action(
         detail=False,

@@ -4,7 +4,7 @@ from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from authorization.services.assignments import assign_default_role
 
-from posts.models import Post
+from posts.models import Post, Comment
 
 
 User = get_user_model()
@@ -103,15 +103,27 @@ class PostPermissionTests(APITestCase):
         )
 
     def test_owner_can_delete_post(self):
-        self.client.force_authenticate(user=self.user01)
+        self.client.force_authenticate(user=self.user01,)
 
         response = self.client.delete(
-            reverse("post-detail", args=[self.post.id])
+            reverse("post-detail", args=[self.post.id],)
         )
 
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(
-            Post.objects.filter(id=self.post.id).exists()
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT,)
+
+        self.assertTrue(Post.objects.filter(id=self.post.id,).exists())
+
+        self.post.refresh_from_db()
+
+        self.assertFalse(self.post.is_active)
+
+        response = self.client.get(
+            reverse("post-detail", args=[self.post.id],)
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
         )
 
     def test_superuser_can_update_any_post(self):
@@ -126,4 +138,58 @@ class PostPermissionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         self.post.refresh_from_db()
-        self.assertEqual(self.post.title, "Admin Updated")
+        self.assertEqual(self.post.title, "Admin Updated"),
+
+    def test_soft_deleted_post_hides_its_comments(
+        self,
+    ):
+        comment = Comment.objects.create(
+            post=self.post,
+            user=self.user02,
+            body="Test comment",
+        )
+
+        self.client.force_authenticate(
+            user=self.user01,
+        )
+
+        response = self.client.delete(
+            reverse(
+                "post-detail",
+                args=[self.post.id],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.post.refresh_from_db()
+        comment.refresh_from_db()
+
+        self.assertFalse(
+            self.post.is_active
+        )
+
+        self.assertTrue(
+            Comment.objects.filter(
+                id=comment.id,
+            ).exists()
+        )
+
+        self.assertTrue(
+            comment.is_active
+        )
+
+        response = self.client.get(
+            reverse(
+                "comment-detail",
+                args=[comment.id],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )

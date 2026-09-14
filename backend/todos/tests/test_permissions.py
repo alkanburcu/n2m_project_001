@@ -95,16 +95,27 @@ class TodoPermissionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_owner_can_delete_todo(self):
-        self.client.force_authenticate(user=self.user01)
+        self.client.force_authenticate(user=self.user01,)
 
         response = self.client.delete(
-            reverse("todo-detail", args=[self.todo01.id])
+            reverse("todo-detail",args=[self.todo01.id],)
         )
 
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(
-            Todo.objects.filter(id=self.todo01.id).exists()
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT,)
+
+        self.assertTrue(
+            Todo.objects.filter(id=self.todo01.id,).exists()
         )
+
+        self.todo01.refresh_from_db()
+
+        self.assertFalse(self.todo01.is_active)
+
+        response = self.client.get(
+            reverse("todo-detail",args=[self.todo01.id],)
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,)
 
     def test_superuser_can_access_all_todos(self):
         Todo.objects.create(

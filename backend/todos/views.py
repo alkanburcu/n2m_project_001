@@ -32,9 +32,12 @@ class TodoViewSet(ModelViewSet):
     def get_queryset(self):
         user = self.request.user
 
-        queryset = Todo.objects.select_related(
+        queryset = Todo.objects.filter(
+            is_active=True,
+            user__is_active=True,
+        ).select_related(
             "user",
-        ).all()
+        )
 
         if not self.can_manage_others():
             queryset = queryset.filter(
@@ -71,4 +74,14 @@ class TodoViewSet(ModelViewSet):
 
         serializer.save(
             user=target_user,
+        )
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+
+        instance.save(
+            update_fields=[
+                "is_active",
+                "updated_at",
+            ]
         )

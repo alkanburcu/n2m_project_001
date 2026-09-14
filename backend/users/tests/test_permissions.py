@@ -7,7 +7,9 @@ from authorization.models import (
     Permission,
     UserPermissionOverride,
 )
-
+from albums.models import Album
+from posts.models import Post
+from todos.models import Todo
 
 User = get_user_model()
 
@@ -258,12 +260,55 @@ class UserPermissionTests(APITestCase):
             password="Test123!",
         )
 
-        self.client.force_authenticate(user=self.superuser)
+        self.client.force_authenticate(user=self.superuser,)
+
+        response = self.client.delete(
+            reverse("user-detail", args=[user_to_delete.id],)
+        )
+
+        self.assertEqual(response.status_code,status.HTTP_204_NO_CONTENT,)
+
+        self.assertTrue(
+            User.objects.filter(id=user_to_delete.id,).exists()
+        )
+
+        user_to_delete.refresh_from_db()
+
+        self.assertFalse(user_to_delete.is_active)
+
+        response = self.client.get(
+            reverse("user-detail", args=[user_to_delete.id],)
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,)
+
+    def test_soft_deleted_user_hides_related_content(
+        self,
+    ):
+        todo = Todo.objects.create(
+            user=self.user02,
+            title="Preserved todo",
+        )
+
+        post = Post.objects.create(
+            user=self.user02,
+            title="Preserved post",
+            body="Post body",
+        )
+
+        album = Album.objects.create(
+            user=self.user02,
+            title="Preserved album",
+        )
+
+        self.client.force_authenticate(
+            user=self.superuser,
+        )
 
         response = self.client.delete(
             reverse(
                 "user-detail",
-                args=[user_to_delete.id],
+                args=[self.user02.id],
             )
         )
 
@@ -272,8 +317,52 @@ class UserPermissionTests(APITestCase):
             status.HTTP_204_NO_CONTENT,
         )
 
+        self.user02.refresh_from_db()
+
         self.assertFalse(
-            User.objects.filter(
-                id=user_to_delete.id
-            ).exists()
+            self.user02.is_active
+        )
+
+        self.assertTrue(
+            Todo.objects.filter(id=todo.id).exists()
+        )
+        self.assertTrue(
+            Post.objects.filter(id=post.id).exists()
+        )
+        self.assertTrue(
+            Album.objects.filter(id=album.id).exists()
+        )
+
+        todo_response = self.client.get(
+            reverse(
+                "todo-detail",
+                args=[todo.id],
+            )
+        )
+
+        post_response = self.client.get(
+            reverse(
+                "post-detail",
+                args=[post.id],
+            )
+        )
+
+        album_response = self.client.get(
+            reverse(
+                "album-detail",
+                args=[album.id],
+            )
+        )
+
+        self.assertEqual(
+            todo_response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+        self.assertEqual(
+            post_response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+        self.assertEqual(
+            album_response.status_code,
+            status.HTTP_404_NOT_FOUND,
         )

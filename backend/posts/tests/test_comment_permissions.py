@@ -83,15 +83,40 @@ class CommentPermissionTests(APITestCase):
         self.assertEqual(self.comment.body, "User02 comment")
 
     def test_owner_can_delete_comment(self):
-        self.client.force_authenticate(user=self.user02)
+        self.client.force_authenticate(user=self.user02,)
 
         response = self.client.delete(
-            reverse("comment-detail", args=[self.comment.id])
+            reverse(
+                "comment-detail",
+                args=[self.comment.id],
+            )
         )
 
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertTrue(
+            Comment.objects.filter(id=self.comment.id,).exists()
+        )
+
+        self.comment.refresh_from_db()
+
         self.assertFalse(
-            Comment.objects.filter(id=self.comment.id).exists()
+            self.comment.is_active
+        )
+
+        response = self.client.get(
+            reverse(
+                "comment-detail",
+                args=[self.comment.id],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
         )
 
     def test_superuser_can_update_any_comment(self):
