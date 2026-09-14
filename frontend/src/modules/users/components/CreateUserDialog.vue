@@ -285,7 +285,7 @@ const createUser = async () => {
   padding: 24px;
 
   background:
-    rgba(31, 36, 49, 0.32);
+    rgba(0, 0, 0, 0.48);
 }
 
 .user-dialog {
@@ -293,7 +293,8 @@ const createUser = async () => {
 
   overflow: hidden;
 
-  background: #ffffff;
+  background:
+    var(--color-surface);
 
   border:
     1px solid var(--color-border);
@@ -302,13 +303,14 @@ const createUser = async () => {
 
   box-shadow:
     0 24px 60px
-    rgba(31, 36, 49, 0.18);
+    rgba(0, 0, 0, 0.28);
 }
 
 .user-dialog__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+
   gap: 16px;
 
   padding: 20px 22px;
@@ -320,6 +322,7 @@ const createUser = async () => {
 .user-dialog__title {
   display: flex;
   align-items: center;
+
   gap: 12px;
 }
 
@@ -332,10 +335,14 @@ const createUser = async () => {
   display: grid;
   place-items: center;
 
-  color: var(--color-primary);
+  color:
+    var(--color-primary);
 
   background:
-    rgba(82, 63, 158, 0.07);
+    rgba(
+      var(--color-primary-rgb),
+      0.08
+    );
 
   border-radius: 9px;
 }
@@ -343,7 +350,8 @@ const createUser = async () => {
 .user-dialog__title h2 {
   margin: 0;
 
-  color: var(--color-title);
+  color:
+    var(--color-title);
 
   font-size: 16px;
   font-weight: 650;
@@ -352,7 +360,8 @@ const createUser = async () => {
 .user-dialog__title p {
   margin: 4px 0 0;
 
-  color: var(--color-subtitle);
+  color:
+    var(--color-subtitle);
 
   font-size: 12.5px;
 }
@@ -363,29 +372,40 @@ const createUser = async () => {
 
   padding: 6px;
 
-  color: var(--color-subtitle);
+  color:
+    var(--color-subtitle);
 
-  background: transparent;
+  background:
+    transparent;
+
   border: 0;
   border-radius: 7px;
 
   cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease;
 }
 
-.user-dialog__close:hover {
-  color: var(--color-title);
+.user-dialog__close:hover:not(:disabled) {
+  color:
+    var(--color-title);
 
-  background: #f5f5f5;
+  background:
+    var(--color-surface-hover);
 }
 
 .user-dialog__close:disabled {
   cursor: not-allowed;
+
   opacity: 0.5;
 }
 
 .user-dialog__form {
   display: flex;
   flex-direction: column;
+
   gap: 16px;
 
   padding: 22px;
@@ -393,19 +413,23 @@ const createUser = async () => {
 
 .dialog-grid {
   display: grid;
+
   grid-template-columns:
     repeat(2, minmax(0, 1fr));
+
   gap: 14px;
 }
 
 .dialog-field {
   display: flex;
   flex-direction: column;
+
   gap: 7px;
 }
 
 .dialog-field span {
-  color: var(--color-title);
+  color:
+    var(--color-title);
 
   font-size: 12.5px;
   font-weight: 600;
@@ -418,12 +442,14 @@ const createUser = async () => {
 
   padding: 0 11px;
 
-  color: var(--color-title);
+  color:
+    var(--color-title);
 
   font: inherit;
   font-size: 13px;
 
-  background: #ffffff;
+  background:
+    var(--color-surface);
 
   border:
     1px solid var(--color-border);
@@ -431,25 +457,43 @@ const createUser = async () => {
   border-radius: 8px;
 
   outline: none;
+
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.dialog-field input::placeholder {
+  color:
+    var(--color-subtitle);
 }
 
 .dialog-field input:focus {
   border-color:
-    rgba(82, 63, 158, 0.48);
+    rgba(
+      var(--color-primary-rgb),
+      0.48
+    );
 
   box-shadow:
     0 0 0 3px
-    rgba(82, 63, 158, 0.08);
+    rgba(
+      var(--color-primary-rgb),
+      0.1
+    );
 }
 
 .user-dialog__error {
   padding: 10px 12px;
 
-  color: #b42318;
+  color:
+    var(--color-danger);
 
   font-size: 12.5px;
 
-  background: #fff3f2;
+  background:
+    var(--color-danger-background);
 
   border-radius: 8px;
 }
@@ -457,6 +501,7 @@ const createUser = async () => {
 .user-dialog__actions {
   display: flex;
   justify-content: flex-end;
+
   gap: 9px;
 
   padding-top: 4px;
@@ -468,6 +513,7 @@ const createUser = async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   gap: 7px;
 
   padding: 0 14px;
@@ -479,28 +525,54 @@ const createUser = async () => {
   border-radius: 8px;
 
   cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
 }
 
 .dialog-button--secondary {
-  color: var(--color-subtitle);
+  color:
+    var(--color-subtitle);
 
-  background: #ffffff;
+  background:
+    var(--color-surface);
 
   border:
     1px solid var(--color-border);
 }
 
-.dialog-button--primary {
-  color: #ffffff;
+.dialog-button--secondary:hover:not(:disabled) {
+  color:
+    var(--color-title);
 
-  background: var(--color-primary);
+  background:
+    var(--color-surface-hover);
+}
+
+.dialog-button--primary {
+  color:
+    var(--color-on-primary);
+
+  background:
+    var(--color-primary);
 
   border:
     1px solid var(--color-primary);
 }
 
+.dialog-button--primary:hover:not(:disabled) {
+  background:
+    var(--color-primary-hover);
+
+  border-color:
+    var(--color-primary-hover);
+}
+
 .dialog-button:disabled {
   opacity: 0.6;
+
   cursor: not-allowed;
 }
 

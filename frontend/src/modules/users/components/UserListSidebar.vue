@@ -35,8 +35,10 @@ import n2mobilLogo from '@/assets/images/n2mobil_amblem.png'
   flex-direction: column;
   justify-content: space-between;
 
-  background: #fafafa;
-  border-right: 1px solid var(--color-border);
+  background: var(--color-surface-soft);
+
+  border-right:
+    1px solid var(--color-border);
 }
 
 .sidebar__menu {
@@ -46,20 +48,23 @@ import n2mobilLogo from '@/assets/images/n2mobil_amblem.png'
 .sidebar__item {
   display: flex;
   align-items: center;
+
   gap: 10px;
 
   padding: 12px 22px;
 
+  color: var(--color-subtitle);
+
   font-size: 14px;
   font-weight: 500;
-
-  color: var(--color-subtitle);
 }
 
 .sidebar__item--active {
   position: relative;
+
   color: var(--color-primary);
-  background: var(--color-white);
+
+  background: var(--color-surface);
 }
 
 .sidebar__item--active::before {
@@ -72,18 +77,20 @@ import n2mobilLogo from '@/assets/images/n2mobil_amblem.png'
   width: 4px;
   height: 100%;
 
-  border-radius: 0 4px 4px 0;
   background: var(--color-primary);
+  border-radius: 0 4px 4px 0;
 }
 
 .sidebar__logo {
-
   padding: 24px;
 }
+
 .sidebar__logo-image {
   display: block;
+
   width: 105px;
   height: auto;
+
   object-fit: contain;
 }
 </style> 

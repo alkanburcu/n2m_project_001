@@ -397,7 +397,7 @@ onBeforeUnmount(() => {
 .profile-card {
   padding: 28px;
 
-  background: #ffffff;
+  background: var(--color-surface);
 
   border: 1px solid var(--color-border);
   border-radius: 14px;
@@ -427,10 +427,11 @@ onBeforeUnmount(() => {
   color: var(--color-primary);
 
   background:
-    rgba(82, 63, 158, 0.07);
+    rgba(var(--color-primary-rgb), 0.07);
 
   border:
-    1px solid rgba(82, 63, 158, 0.12);
+    1px solid
+    rgba(var(--color-primary-rgb), 0.12);
 
   border-radius: 50%;
 }
@@ -474,10 +475,11 @@ onBeforeUnmount(() => {
   font-weight: 600;
 
   background:
-    rgba(82, 63, 158, 0.06);
+    rgba(var(--color-primary-rgb), 0.06);
 
   border:
-    1px solid rgba(82, 63, 158, 0.14);
+    1px solid
+    rgba(var(--color-primary-rgb), 0.14);
 
   border-radius: 8px;
 
@@ -536,7 +538,7 @@ onBeforeUnmount(() => {
   font: inherit;
   font-size: 13.5px;
 
-  background: #ffffff;
+  background: var(--color-surface);
 
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -550,11 +552,11 @@ onBeforeUnmount(() => {
 
 .form-field input:focus {
   border-color:
-    rgba(82, 63, 158, 0.48);
+    rgba(var(--color-primary-rgb), 0.48);
 
   box-shadow:
     0 0 0 3px
-    rgba(82, 63, 158, 0.08);
+    rgba(var(--color-primary-rgb), 0.08);
 }
 
 .company-placeholder {
@@ -569,7 +571,7 @@ onBeforeUnmount(() => {
 
   font-size: 13.5px;
 
-  background: #fafafa;
+  background: var(--color-surface-soft);
 
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -640,7 +642,7 @@ onBeforeUnmount(() => {
 
   color: var(--color-subtitle);
 
-  background: #ffffff;
+  background: var(--color-surface);
 
   border: 1px solid var(--color-border);
   border-radius: 14px;

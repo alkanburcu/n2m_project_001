@@ -72,34 +72,22 @@ const fetchAlbums = async (userId) => {
         userId,
       )
 
-    if (
-      requestId
-      !== albumRequestId
-    ) {
+    if (requestId !== albumRequestId) {
       return
     }
 
     albums.value = response.data
   } catch (error) {
-    if (
-      requestId
-      !== albumRequestId
-    ) {
+    if (requestId!== albumRequestId) {
       return
     }
 
-    console.error(
-      'Failed to fetch albums:',
-      error,
-    )
+    console.error('Failed to fetch albums:', error,)
 
     errorMessage.value =
       'Albums could not be loaded.'
   } finally {
-    if (
-      requestId
-      === albumRequestId
-    ) {
+    if (requestId=== albumRequestId) {
       isLoading.value = false
     }
   }
@@ -107,10 +95,7 @@ const fetchAlbums = async (userId) => {
 
 const openCreateAlbum = async () => {
   if (
-    !authStore.can(
-      'albums.create',
-    )
-    || !canManageProfileAlbums.value
+    !authStore.can('albums.create') || !canManageProfileAlbums.value
   ) {
     return
   }
@@ -719,7 +704,7 @@ watch(
 }
 
 .page-state--error {
-  color: #b42318;
+   color: var(--color-danger);
 }
 
 .new-album-button {
@@ -730,13 +715,14 @@ watch(
 
   padding: 7px 9px;
 
-  color: var(--color-title);
+  color: var(--color-primary);
 
   font: inherit;
   font-size: 12px;
   font-weight: 600;
 
-  background: transparent;
+  background:
+    rgba(var(--color-primary-rgb), 0.06);
 
   border: 0;
   border-radius: 7px;
@@ -765,7 +751,7 @@ watch(
 
   padding: 14px;
 
-  background: #ffffff;
+  background: var(--color-surface);
 
   border:
     1px solid var(--color-border);
@@ -791,6 +777,8 @@ watch(
   font: inherit;
   font-size: 13px;
 
+  background: var(--color-surface);
+
   border:
     1px solid var(--color-border);
 
@@ -801,7 +789,7 @@ watch(
 
 .album-create__input:focus {
   border-color:
-    rgba(82, 63, 158, 0.45);
+    rgba(var(--color-primary-rgb), 0.45);
 }
 
 .album-grid {
@@ -823,7 +811,8 @@ watch(
 
   overflow: hidden;
 
-  background: #ffffff;
+  background: var(--color-surface);
+
 
   border:
     1px solid var(--color-border);
@@ -840,11 +829,11 @@ watch(
   transform: translateY(-2px);
 
   border-color:
-    rgba(82, 63, 158, 0.2);
+    rgba(var(--color-primary-rgb), 0.25);
 
   box-shadow:
     0 8px 22px
-    rgba(30, 34, 45, 0.07);
+    rgba(0, 0, 0, 0.12);
 }
 
 .album-card__open {
@@ -873,7 +862,7 @@ watch(
 
   overflow: hidden;
 
-  background: #f1eff6;
+  background: var(--color-surface-muted);
 }
 
 .album-preview__image {
@@ -1020,6 +1009,8 @@ watch(
   font: inherit;
   font-size: 13px;
 
+  background: var(--color-surface);
+
   border:
     1px solid var(--color-border);
 
@@ -1030,7 +1021,7 @@ watch(
 
 .album-edit__input:focus {
   border-color:
-    rgba(82, 63, 158, 0.45);
+    rgba(var(--color-primary-rgb), 0.45)
 }
 
 .album-edit__actions {
@@ -1043,7 +1034,7 @@ watch(
   margin-top: auto;
 }
 
-.icon-button {
+icon-button {
   width: 29px;
   height: 29px;
 
@@ -1052,31 +1043,32 @@ watch(
 
   padding: 0;
 
-  color: #858b97;
+  color: var(--color-subtitle);
 
-  background:
-    rgba(255, 255, 255, 0.94);
+  background: var(--color-surface);
 
-  border: 0;
+  border:
+    1px solid var(--color-border);
+
   border-radius: 7px;
 
   box-shadow:
     0 2px 8px
-    rgba(20, 20, 30, 0.08);
+    rgba(0, 0, 0, 0.08);
 
   cursor: pointer;
 }
 
 .icon-button:hover {
-  color: var(--color-primary);
+   color: var(--color-primary);
 
-  background: #ffffff;
+  background: var(--color-surface-hover);
 }
 
 .icon-button--danger:hover {
-  color: #b42318;
+  color: var(--color-danger);
 
-  background: #ffffff;
+  background: var(--color-danger-background);
 }
 
 .icon-button:disabled {
@@ -1106,7 +1098,7 @@ watch(
 }
 
 .primary-button {
-  color: #ffffff;
+  color: var(--color-on-primary);
 
   background: var(--color-primary);
 }

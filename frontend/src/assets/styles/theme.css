@@ -1,0 +1,66 @@
+/* Shared brand colors */
+
+:root {
+  --color-primary: #9b72ff;
+  --color-primary-rgb: 155, 114, 255;
+
+  --color-on-primary: #ffffff;
+}
+
+
+/* LIGHT MODE */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --color-primary: #4c3899;
+  --color-primary-hover: #47368c;
+  --color-primary-rgb: 76, 56, 153;
+
+  --color-on-primary: #ffffff;
+
+  --color-background: #ffffff;
+
+  --color-surface: #ffffff;
+  --color-surface-soft: #fafafa;
+  --color-surface-muted: #eeeeee;
+  --color-surface-hover: #f5f5f7;
+
+  --color-title: #26303e;
+  --color-subtitle: #5c6672;
+
+  --color-border: #d8d9dd;
+
+  --color-danger: #b42318;
+  --color-danger-background: #fff3f2;
+}
+
+
+/* DARK MODE */
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-primary: #9b72ff;
+  --color-primary-hover: #875ee8;
+  --color-primary-rgb: 155, 114, 255;
+
+  --color-on-primary: #ffffff;
+
+  --color-background: #101018;
+
+  --color-surface: #1a1a24;
+  --color-surface-soft: #15151e;
+  --color-surface-muted: #272731;
+  --color-surface-hover: #242331;
+
+  --color-title: #f3f2f7;
+  --color-subtitle: #aaa7b5;
+
+  --color-border: #30303c;
+
+  --color-danger: #ff8b82;
+  --color-danger-background:
+    rgba(255, 90, 90, 0.09);
+}

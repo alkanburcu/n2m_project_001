@@ -240,7 +240,7 @@ watch(
   flex-direction: column;
   justify-content: space-between;
 
-  background: #fafafa;
+  background: var(--color-surface-soft);
 
   border-right:
     1px solid var(--color-border);
@@ -255,14 +255,28 @@ watch(
   display: grid;
   place-items: center;
 
+  overflow: hidden;
+
   color: var(--color-primary);
 
   font-size: 16px;
   font-weight: 600;
 
-  background: #eeeeee;
+  background: var(--color-surface-muted);
 
   border-radius: 50%;
+}
+
+.detail-sidebar__avatar-image {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+  object-position: center;
+
+  border-radius: inherit;
 }
 
 .detail-sidebar__nav {
@@ -289,7 +303,7 @@ watch(
 .detail-sidebar__link.router-link-active {
   color: var(--color-primary);
 
-  background: var(--color-white);
+  background: var(--color-surface);
 }
 
 .detail-sidebar__link.router-link-active::before {
@@ -355,7 +369,7 @@ watch(
 
 .detail-sidebar__profile-button:hover {
   background:
-    rgba(82, 63, 158, 0.05);
+    rgba(var(--color-primary-rgb), 0.05);
 }
 
 .detail-sidebar__profile-button:focus-visible {
@@ -363,14 +377,7 @@ watch(
 
   box-shadow:
     inset 0 0 0 2px
-    rgba(82, 63, 158, 0.22);
-}
-
-.detail-sidebar__avatar-image {
-  width: 100%;
-  height: 100%;
-
-  object-fit: cover;
+    rgba(var(--color-primary-rgb), 0.22);
 }
 
 .detail-sidebar__identity {

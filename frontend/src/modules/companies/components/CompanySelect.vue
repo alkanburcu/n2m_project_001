@@ -327,7 +327,7 @@ onBeforeUnmount(() => {
   font: inherit;
   font-size: 13.5px;
 
-  background: #ffffff;
+  background: var(--color-surface);
 
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -383,7 +383,7 @@ onBeforeUnmount(() => {
 
   overflow: hidden;
 
-  background: #ffffff;
+  background: var(--color-surface);
 
   border: 1px solid var(--color-border);
   border-radius: 10px;
@@ -454,15 +454,15 @@ onBeforeUnmount(() => {
 }
 
 .company-select__option:hover {
-  background:
-    rgba(82, 63, 158, 0.055);
+ background:
+    rgba(var(--color-primary-rgb), 0.055);
 }
 
 .company-select__option--selected {
   color: var(--color-primary);
 
   background:
-    rgba(82, 63, 158, 0.08);
+    rgba(var(--color-primary-rgb), 0.08);
 }
 
 .company-select__option--empty {
@@ -502,8 +502,8 @@ onBeforeUnmount(() => {
 
   text-align: left;
 
-  background:
-    rgba(82, 63, 158, 0.035);
+ background:
+    rgba(var(--color-primary-rgb), 0.035);
 
   border: 0;
   border-top:
@@ -514,6 +514,6 @@ onBeforeUnmount(() => {
 
 .company-select__add:hover {
   background:
-    rgba(82, 63, 158, 0.08);
+    rgba(var(--color-primary-rgb), 0.08);
 }
 </style>

@@ -152,7 +152,7 @@ defineEmits([
 
   padding: 20px;
 
-  background: var(--color-white);
+  background: var(--color-surface);
 
   border: 1px solid var(--color-border);
   border-radius: 10px;
@@ -203,7 +203,7 @@ defineEmits([
   color: var(--color-primary);
 
   background:
-    rgba(82, 63, 158, 0.07);
+    rgba(var(--color-primary-rgb), 0.07);
 }
 
 .user-card__edit:focus-visible {
@@ -211,7 +211,7 @@ defineEmits([
 
   box-shadow:
     0 0 0 3px
-    rgba(82, 63, 158, 0.12);
+    rgba(var(--color-primary-rgb), 0.12);
 }
 
 .user-card__profile {
@@ -239,7 +239,7 @@ defineEmits([
   font-size: 20px;
   font-weight: 600;
 
-  background: #eeeeee;
+  background: var(--color-surface-muted);
 
   border-radius: 50%;
 }
@@ -251,6 +251,9 @@ defineEmits([
   display: block;
 
   object-fit: cover;
+  object-position: center;
+
+  border-radius: inherit;
 }
 
 .user-card__identity {
@@ -291,7 +294,7 @@ defineEmits([
 .user-card__username {
   margin-bottom: 2px;
 
-  color: #626875;
+  color: var(--color-subtitle);
 }
 
 .user-card__details {

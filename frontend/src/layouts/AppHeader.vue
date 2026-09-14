@@ -8,20 +8,25 @@ import {
 
 import {
   IconArrowLeft,
+  IconBriefcase,
   IconChevronDown,
   IconLogout,
   IconUser,
   IconUsers,
-  IconBriefcase,
+  IconMoon,
+  IconSun,
 } from '@tabler/icons-vue'
 
 import { useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import { useThemeStore } from '@/stores/themeStore'
 
 const route = useRoute()
 const router = useRouter()
+
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 
 const isMenuOpen = ref(false)
 const isLoggingOut = ref(false)
@@ -82,7 +87,7 @@ const closeMenu = () => {
   isMenuOpen.value = false
 }
 
-/*LOGOUT */
+/* LOGOUT */
 
 const handleLogout = async () => {
   isLoggingOut.value = true
@@ -109,17 +114,24 @@ const handleClickOutside = (event) => {
 }
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
+  document.addEventListener(
+    'click',
+    handleClickOutside,
+  )
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener(
+    'click',
+    handleClickOutside,
+  )
 })
 </script>
 
 <template>
   <header class="app-header">
     <!-- LEFT SIDE -->
+
     <div class="app-header__left">
       <button
         v-if="!isHomePage"
@@ -137,6 +149,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- RIGHT SIDE -->
+
     <div
       ref="menuRef"
       class="account"
@@ -158,7 +171,8 @@ onBeforeUnmount(() => {
           :stroke-width="2"
           class="account__chevron"
           :class="{
-            'account__chevron--open': isMenuOpen,
+            'account__chevron--open':
+              isMenuOpen,
           }"
         />
       </button>
@@ -186,11 +200,6 @@ onBeforeUnmount(() => {
             class="account-dropdown__item"
             @click="goEditProfile"
           >
-            <IconUserEdit
-              :size="18"
-              :stroke-width="1.8"
-            />
-            
             <IconUser
               :size="18"
               :stroke-width="1.8"
@@ -213,7 +222,35 @@ onBeforeUnmount(() => {
             <span>Users</span>
           </button>
 
-          <div class="account-dropdown__separator" />
+          <button
+            type="button"
+            class="account-dropdown__item"
+            @click="themeStore.toggleTheme"
+          >
+            <IconSun
+              v-if="themeStore.theme === 'dark'"
+              :size="18"
+              :stroke-width="1.8"
+            />
+
+            <IconMoon
+              v-else
+              :size="18"
+              :stroke-width="1.8"
+            />
+
+            <span>
+              {{
+                themeStore.theme === 'dark'
+                  ? 'Light Mode'
+                  : 'Dark Mode'
+              }}
+            </span>
+          </button>
+
+          <div
+            class="account-dropdown__separator"
+          ></div>
 
           <button
             type="button"
@@ -241,7 +278,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-
 /* HEADER */
 
 .app-header {
@@ -273,7 +309,7 @@ onBeforeUnmount(() => {
   z-index: 20;
 }
 
-/* GO HOME*/
+/* GO HOME */
 
 .app-header__left {
   min-width: 0;
@@ -287,6 +323,7 @@ onBeforeUnmount(() => {
 
   display: inline-flex;
   align-items: center;
+
   gap: 7px;
 
   padding: 0 9px;
@@ -298,6 +335,7 @@ onBeforeUnmount(() => {
   font-weight: 600;
 
   background: transparent;
+
   border: 1px solid transparent;
   border-radius: 8px;
 
@@ -312,10 +350,10 @@ onBeforeUnmount(() => {
 .home-button:hover {
   color: var(--color-primary);
 
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--color-surface-hover);
 
   border-color:
-    rgba(82, 63, 158, 0.12);
+    rgba(var(--color-primary-rgb), 0.12);
 }
 
 .home-button:focus-visible {
@@ -323,7 +361,8 @@ onBeforeUnmount(() => {
 
   color: var(--color-primary);
 
-  background: rgba(255, 255, 255, 0.72);
+  background:
+    rgba(255, 255, 255, 0.72);
 
   box-shadow:
     0 0 0 3px rgba(82, 63, 158, 0.1);
@@ -333,6 +372,7 @@ onBeforeUnmount(() => {
 
 .account {
   position: relative;
+
   margin-left: auto;
 }
 
@@ -343,13 +383,14 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+
   gap: 3px;
 
   padding: 0 8px;
 
   color: var(--color-primary);
 
-  background: rgba(255, 255, 255, 0.75);
+  background: var(--color-surface);
 
   border:
     1px solid rgba(82, 63, 158, 0.16);
@@ -369,8 +410,7 @@ onBeforeUnmount(() => {
 
 .account__trigger:hover,
 .account__trigger[aria-expanded='true'] {
-  background: #ffffff;
-
+  background: var(--color-surface-hover);
   border-color:
     rgba(82, 63, 158, 0.32);
 
@@ -391,27 +431,7 @@ onBeforeUnmount(() => {
 
 .account-dropdown {
   position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
 
-  width: 132px;
-
-  padding: 6px;
-
-  background: #ffffff;
-
-  border:
-    1px solid var(--color-border);
-
-  border-radius: 10px;
-
-  box-shadow:
-    0 12px 26px rgba(31, 36, 49, 0.1),
-    0 2px 5px rgba(31, 36, 49, 0.04);
-}
-
-.account-dropdown {
-  position: absolute;
   top: calc(100% + 8px);
   right: 0;
 
@@ -419,7 +439,7 @@ onBeforeUnmount(() => {
 
   padding: 6px;
 
-  background: #ffffff;
+  background: var(--color-surface);
 
   border:
     1px solid var(--color-border);
@@ -437,6 +457,7 @@ onBeforeUnmount(() => {
 
   display: flex;
   align-items: center;
+
   gap: 8px;
 
   padding: 8px 10px;
@@ -450,6 +471,7 @@ onBeforeUnmount(() => {
   text-align: left;
 
   background: transparent;
+
   border: 0;
   border-radius: 7px;
 
@@ -464,7 +486,7 @@ onBeforeUnmount(() => {
   color: var(--color-primary);
 
   background:
-    rgba(82, 63, 158, 0.06);
+    rgba(var(--color-primary-rgb), 0.08);
 }
 
 .account-dropdown__separator {
@@ -472,21 +494,24 @@ onBeforeUnmount(() => {
 
   margin: 5px 4px;
 
-  background: var(--color-border);
+  background:
+    var(--color-border);
 }
 
 .account-dropdown__logout:hover:not(:disabled) {
-  color: #b42318;
-  background: #fff3f2;
+  color: var(--color-danger);
+
+  background:
+    var(--color-danger-background);
 }
 
 .account-dropdown__logout:disabled {
   opacity: 0.6;
+
   cursor: not-allowed;
 }
 
-  /*DROPDOWN ANIMATION*/
-
+/* DROPDOWN ANIMATION */
 
 .dropdown-enter-active,
 .dropdown-leave-active {
@@ -498,6 +523,8 @@ onBeforeUnmount(() => {
 .dropdown-enter-from,
 .dropdown-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
+
+  transform:
+    translateY(-4px);
 }
 </style>

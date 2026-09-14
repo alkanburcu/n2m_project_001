@@ -946,6 +946,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   gap: 24px;
 
   margin-bottom: 24px;
@@ -969,8 +970,10 @@ onBeforeUnmount(() => {
 }
 
 .page-state--error {
-  color: #b42318;
+  color: var(--color-danger);
 }
+
+/* ACTION BUTTONS */
 
 .new-post-button,
 .see-more-button {
@@ -1009,8 +1012,13 @@ onBeforeUnmount(() => {
   color: var(--color-primary);
 
   background:
-    rgba(82, 63, 158, 0.06);
+    rgba(
+      var(--color-primary-rgb),
+      0.06
+    );
 }
+
+/* ICON BUTTONS */
 
 .icon-button {
   width: 30px;
@@ -1021,7 +1029,7 @@ onBeforeUnmount(() => {
 
   padding: 0;
 
-  color: #858b97;
+  color: var(--color-subtitle);
 
   background: transparent;
 
@@ -1039,14 +1047,17 @@ onBeforeUnmount(() => {
   color: var(--color-primary);
 
   background:
-    rgba(82, 63, 158, 0.06);
+    rgba(
+      var(--color-primary-rgb),
+      0.06
+    );
 }
 
 .icon-button--danger:hover {
-  color: #b42318;
+  color: var(--color-danger);
 
   background:
-    rgba(180, 35, 24, 0.07);
+    var(--color-danger-background);
 }
 
 .icon-button:disabled {
@@ -1054,6 +1065,8 @@ onBeforeUnmount(() => {
 
   opacity: 0.4;
 }
+
+/* POSTS LIST */
 
 .posts-list {
   border-top:
@@ -1109,6 +1122,8 @@ onBeforeUnmount(() => {
   gap: 4px;
 }
 
+/* POST EDITOR */
+
 .post-editor {
   width: 100%;
 
@@ -1123,7 +1138,8 @@ onBeforeUnmount(() => {
 
   padding: 18px;
 
-  background: #ffffff;
+  background:
+    var(--color-surface);
 
   border:
     1px solid var(--color-border);
@@ -1141,7 +1157,8 @@ onBeforeUnmount(() => {
 
   font: inherit;
 
-  background: transparent;
+  background:
+    var(--color-surface);
 
   border:
     1px solid var(--color-border);
@@ -1152,7 +1169,8 @@ onBeforeUnmount(() => {
 
   transition:
     border-color 0.18s ease,
-    box-shadow 0.18s ease;
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
 }
 
 .post-editor__title {
@@ -1173,14 +1191,25 @@ onBeforeUnmount(() => {
   resize: vertical;
 }
 
+.post-editor__title::placeholder,
+.post-editor__body::placeholder {
+  color: var(--color-subtitle);
+}
+
 .post-editor__title:focus,
 .post-editor__body:focus {
   border-color:
-    rgba(82, 63, 158, 0.45);
+    rgba(
+      var(--color-primary-rgb),
+      0.45
+    );
 
   box-shadow:
     0 0 0 3px
-    rgba(82, 63, 158, 0.06);
+    rgba(
+      var(--color-primary-rgb),
+      0.08
+    );
 }
 
 .post-editor__actions {
@@ -1189,6 +1218,8 @@ onBeforeUnmount(() => {
 
   gap: 8px;
 }
+
+/* TEXT / PRIMARY BUTTONS */
 
 .text-button,
 .primary-button {
@@ -1202,6 +1233,10 @@ onBeforeUnmount(() => {
   border-radius: 7px;
 
   cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease;
 }
 
 .text-button {
@@ -1211,13 +1246,23 @@ onBeforeUnmount(() => {
 }
 
 .text-button:hover {
-  background: #f5f5f7;
+  color: var(--color-title);
+
+  background:
+    var(--color-surface-hover);
 }
 
 .primary-button {
-  color: #ffffff;
+  color:
+    var(--color-on-primary);
 
-  background: var(--color-primary);
+  background:
+    var(--color-primary);
+}
+
+.primary-button:hover:not(:disabled) {
+  background:
+    var(--color-primary-hover);
 }
 
 .primary-button:disabled {
@@ -1225,6 +1270,8 @@ onBeforeUnmount(() => {
 
   opacity: 0.5;
 }
+
+/* MODAL */
 
 .modal-backdrop {
   position: fixed;
@@ -1237,7 +1284,7 @@ onBeforeUnmount(() => {
   padding: 28px;
 
   background:
-    rgba(32, 37, 45, 0.42);
+    rgba(0, 0, 0, 0.48);
 
   z-index: 1000;
 }
@@ -1256,13 +1303,17 @@ onBeforeUnmount(() => {
 
   overflow: hidden;
 
-  background: #ffffff;
+  background:
+    var(--color-surface);
+
+  border:
+    1px solid var(--color-border);
 
   border-radius: 16px;
 
   box-shadow:
     0 24px 60px
-    rgba(25, 30, 42, 0.2);
+    rgba(0, 0, 0, 0.3);
 }
 
 .post-modal__close {
@@ -1289,14 +1340,23 @@ onBeforeUnmount(() => {
   cursor: pointer;
 
   z-index: 5;
+
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease;
 }
 
 .post-modal__close:hover {
   color: var(--color-primary);
 
   background:
-    rgba(82, 63, 158, 0.07);
+    rgba(
+      var(--color-primary-rgb),
+      0.08
+    );
 }
+
+/* POST SIDE */
 
 .post-modal__post {
   overflow-y: auto;
@@ -1323,6 +1383,8 @@ onBeforeUnmount(() => {
 
   white-space: pre-line;
 }
+
+/* COMMENTS SIDE */
 
 .post-modal__comments {
   min-width: 0;
@@ -1376,6 +1438,8 @@ onBeforeUnmount(() => {
   gap: 20px;
 }
 
+/* COMMENT */
+
 .comment {
   display: flex;
   align-items: flex-start;
@@ -1385,6 +1449,7 @@ onBeforeUnmount(() => {
 
 .comment__avatar {
   overflow: hidden;
+
   width: 32px;
   height: 32px;
 
@@ -1398,7 +1463,8 @@ onBeforeUnmount(() => {
   font-size: 11px;
   font-weight: 700;
 
-  background: #f0eef6;
+  background:
+    var(--color-surface-muted);
 
   border-radius: 50%;
 }
@@ -1410,6 +1476,9 @@ onBeforeUnmount(() => {
   display: block;
 
   object-fit: cover;
+  object-position: center;
+
+  border-radius: inherit;
 }
 
 .comment__content {
@@ -1445,8 +1514,10 @@ onBeforeUnmount(() => {
 }
 
 .comments-state--error {
-  color: #b42318;
+  color: var(--color-danger);
 }
+
+/* COMMENT COMPOSER */
 
 .comment-composer {
   flex-shrink: 0;
@@ -1474,9 +1545,11 @@ onBeforeUnmount(() => {
   font: inherit;
   font-size: 12px;
 
-  background: #f8f8fa;
+  background:
+    var(--color-surface-soft);
 
-  border: 1px solid transparent;
+  border:
+    1px solid transparent;
 
   border-radius: 18px;
 
@@ -1487,11 +1560,19 @@ onBeforeUnmount(() => {
     background-color 0.18s ease;
 }
 
+.comment-composer__input::placeholder {
+  color: var(--color-subtitle);
+}
+
 .comment-composer__input:focus {
-  background: #ffffff;
+  background:
+    var(--color-surface);
 
   border-color:
-    rgba(82, 63, 158, 0.3);
+    rgba(
+      var(--color-primary-rgb),
+      0.3
+    );
 }
 
 .comment-composer__send {
@@ -1513,11 +1594,17 @@ onBeforeUnmount(() => {
   border-radius: 50%;
 
   cursor: pointer;
+
+  transition:
+    background-color 0.18s ease;
 }
 
 .comment-composer__send:hover {
   background:
-    rgba(82, 63, 158, 0.07);
+    rgba(
+      var(--color-primary-rgb),
+      0.08
+    );
 }
 
 .comment-composer__send:disabled {
@@ -1533,10 +1620,12 @@ onBeforeUnmount(() => {
 
   padding: 0 16px 10px;
 
-  color: #b42318;
+  color: var(--color-danger);
 
   font-size: 11px;
 }
+
+/* MODAL ANIMATION */
 
 .modal-enter-active,
 .modal-leave-active {
@@ -1564,6 +1653,8 @@ onBeforeUnmount(() => {
     translateY(8px)
     scale(0.985);
 }
+
+/* RESPONSIVE */
 
 @media (max-width: 760px) {
   .post-row {

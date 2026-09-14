@@ -618,7 +618,7 @@ onMounted(() => {
 .feed-card {
   overflow: hidden;
 
-  background: #ffffff;
+  background: var(--color-surface);
 
   border:
     1px solid var(--color-border);
@@ -668,7 +668,8 @@ onMounted(() => {
   color: var(--color-primary);
   font-weight: 700;
 
-  background: #f0eef6;
+  background: var(--color-surface-muted);
+
   border-radius: 50%;
 }
 
@@ -763,7 +764,7 @@ onMounted(() => {
   color: var(--color-primary);
 
   background:
-    rgba(82, 63, 158, 0.06);
+    rgba(var(--color-primary-rgb), 0.06);
 }
 
 .modal-backdrop {
@@ -796,7 +797,7 @@ onMounted(() => {
 
   overflow: hidden;
 
-  background: #ffffff;
+  background: var(--color-surface);
 
   border-radius: 16px;
 
@@ -823,7 +824,7 @@ onMounted(() => {
 
   color: var(--color-title);
 
-  background: #ffffff;
+  background: var(--color-surface);
 
   border: 0;
   border-radius: 7px;
@@ -952,6 +953,9 @@ onMounted(() => {
   display: block;
 
   object-fit: cover;
+  object-position: center;
+
+  border-radius: inherit;
 }
 
 .comment__content {
@@ -1013,7 +1017,7 @@ onMounted(() => {
   font: inherit;
   font-size: 12px;
 
-  background: #f8f8fa;
+ background: var(--color-surface-soft);
 
   border: 1px solid transparent;
 
@@ -1023,10 +1027,10 @@ onMounted(() => {
 }
 
 .comment-composer input:focus {
-  background: #ffffff;
+  background: var(--color-surface);
 
   border-color:
-    rgba(82, 63, 158, 0.3);
+    rgba(var(--color-primary-rgb), 0.3);
 }
 
 .comment-composer button {
